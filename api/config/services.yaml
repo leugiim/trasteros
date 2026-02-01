@@ -25,3 +25,35 @@ services:
     # Users module - Repository binding
     App\Users\Domain\Repository\UserRepositoryInterface:
         class: App\Users\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository
+
+    # Direccion module - Repository binding
+    App\Direccion\Domain\Repository\DireccionRepositoryInterface:
+        class: App\Direccion\Infrastructure\Persistence\Doctrine\Repository\DoctrineDireccionRepository
+
+    # Local module - Repository binding
+    App\Local\Domain\Repository\LocalRepositoryInterface:
+        class: App\Local\Infrastructure\Persistence\Doctrine\Repository\DoctrineLocalRepository
+
+    # Gasto module - Repository binding
+    App\Gasto\Domain\Repository\GastoRepositoryInterface:
+        class: App\Gasto\Infrastructure\Persistence\Doctrine\Repository\DoctrineGastoRepository
+
+    # Trastero module - Repository binding
+    App\Trastero\Domain\Repository\TrasteroRepositoryInterface:
+        class: App\Trastero\Infrastructure\Persistence\Doctrine\Repository\DoctrineTrasteroRepository
+
+    # Cliente module - Repository binding
+    App\Cliente\Domain\Repository\ClienteRepositoryInterface:
+        class: App\Cliente\Infrastructure\Persistence\Doctrine\Repository\DoctrineClienteRepository
+
+    # Contrato module - Repository binding
+    App\Contrato\Domain\Repository\ContratoRepositoryInterface:
+        class: App\Contrato\Infrastructure\Persistence\Doctrine\Repository\DoctrineContratoRepository
+
+    # Ingreso module - Repository binding
+    App\Ingreso\Domain\Repository\IngresoRepositoryInterface:
+        class: App\Ingreso\Infrastructure\Persistence\Doctrine\Repository\DoctrineIngresoRepository
+
+    # Prestamo module - Repository binding
+    App\Prestamo\Domain\Repository\PrestamoRepositoryInterface:
+        class: App\Prestamo\Infrastructure\Persistence\Doctrine\Repository\DoctrinePrestamoRepository
