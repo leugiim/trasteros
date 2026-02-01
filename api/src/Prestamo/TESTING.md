@@ -1,6 +1,6 @@
-# Módulo Prestamo - Pruebas de API
+# Testing - Módulo Préstamo
 
-Esta guía contiene ejemplos de pruebas para todos los endpoints del módulo Prestamo.
+Ejemplos de pruebas de la API del módulo Préstamo.
 
 ## Prerrequisitos
 
@@ -24,6 +24,7 @@ php -S localhost:8000 -t public/
 
 ### 1. Crear un Préstamo
 
+#### Préstamo completo
 ```bash
 curl -X POST http://localhost:8000/api/prestamos \
   -H "Content-Type: application/json" \
@@ -39,7 +40,7 @@ curl -X POST http://localhost:8000/api/prestamos \
   }'
 ```
 
-**Respuesta esperada (201 Created):**
+**Respuesta esperada (201 Created)**:
 ```json
 {
   "id": 1,
@@ -52,14 +53,13 @@ curl -X POST http://localhost:8000/api/prestamos \
   "tipoInteres": 4.5,
   "fechaConcesion": "2024-01-20",
   "estado": "activo",
-  "createdAt": "2024-01-20 10:30:00",
-  "updatedAt": "2024-01-20 10:30:00",
+  "createdAt": "2024-01-20T10:30:00+00:00",
+  "updatedAt": "2024-01-20T10:30:00+00:00",
   "deletedAt": null
 }
 ```
 
-### 2. Crear un Préstamo con Campos Opcionales Nulos
-
+#### Préstamo con campos opcionales nulos
 ```bash
 curl -X POST http://localhost:8000/api/prestamos \
   -H "Content-Type: application/json" \
@@ -72,13 +72,15 @@ curl -X POST http://localhost:8000/api/prestamos \
   }'
 ```
 
-### 3. Listar Todos los Préstamos
+---
+
+### 2. Listar Todos los Préstamos
 
 ```bash
 curl http://localhost:8000/api/prestamos
 ```
 
-**Respuesta esperada (200 OK):**
+**Respuesta esperada (200 OK)**:
 ```json
 {
   "data": [
@@ -93,8 +95,8 @@ curl http://localhost:8000/api/prestamos
       "tipoInteres": 4.5,
       "fechaConcesion": "2024-01-20",
       "estado": "activo",
-      "createdAt": "2024-01-20 10:30:00",
-      "updatedAt": "2024-01-20 10:30:00",
+      "createdAt": "2024-01-20T10:30:00+00:00",
+      "updatedAt": "2024-01-20T10:30:00+00:00",
       "deletedAt": null
     }
   ],
@@ -104,37 +106,57 @@ curl http://localhost:8000/api/prestamos
 }
 ```
 
-### 4. Obtener un Préstamo por ID
+---
+
+### 3. Obtener un Préstamo por ID
 
 ```bash
 curl http://localhost:8000/api/prestamos/1
 ```
 
-### 5. Listar Préstamos Filtrados por Local
+**Respuesta esperada (200 OK)**: Igual que un elemento del listado
 
+**Préstamo no encontrado (404)**:
 ```bash
-curl http://localhost:8000/api/prestamos?localId=1
+curl http://localhost:8000/api/prestamos/999
 ```
 
-### 6. Listar Préstamos Filtrados por Estado
-
-```bash
-curl http://localhost:8000/api/prestamos?estado=activo
+```json
+{
+  "error": {
+    "message": "Prestamo with id 999 not found",
+    "code": "PRESTAMO_NOT_FOUND"
+  }
+}
 ```
 
-### 7. Listar Préstamos Filtrados por Entidad Bancaria
+---
 
+### 4. Filtros de Búsqueda
+
+#### Listar préstamos de un local específico
+```bash
+curl "http://localhost:8000/api/prestamos?localId=1"
+```
+
+#### Listar préstamos por estado
+```bash
+curl "http://localhost:8000/api/prestamos?estado=activo"
+```
+
+#### Listar préstamos por entidad bancaria
 ```bash
 curl "http://localhost:8000/api/prestamos?entidadBancaria=Santander"
 ```
 
-### 8. Listar Solo Préstamos Activos (No Eliminados)
-
+#### Listar solo préstamos activos (no eliminados)
 ```bash
-curl http://localhost:8000/api/prestamos?onlyActive=true
+curl "http://localhost:8000/api/prestamos?onlyActive=true"
 ```
 
-### 9. Actualizar un Préstamo
+---
+
+### 5. Actualizar un Préstamo
 
 ```bash
 curl -X PUT http://localhost:8000/api/prestamos/1 \
@@ -151,8 +173,13 @@ curl -X PUT http://localhost:8000/api/prestamos/1 \
   }'
 ```
 
-### 10. Cambiar Estado de un Préstamo a "finalizado"
+**Respuesta esperada (200 OK)**: Préstamo actualizado
 
+---
+
+### 6. Cambiar Estado de un Préstamo
+
+#### Finalizar préstamo
 ```bash
 curl -X PUT http://localhost:8000/api/prestamos/1 \
   -H "Content-Type: application/json" \
@@ -168,15 +195,35 @@ curl -X PUT http://localhost:8000/api/prestamos/1 \
   }'
 ```
 
-### 11. Eliminar un Préstamo
+#### Cancelar préstamo
+```bash
+curl -X PUT http://localhost:8000/api/prestamos/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "localId": 1,
+    "entidadBancaria": "BBVA",
+    "numeroPrestamo": "PRE-2024-001",
+    "capitalSolicitado": 200000.00,
+    "totalADevolver": 235000.00,
+    "tipoInteres": 4.2000,
+    "fechaConcesion": "2024-01-20",
+    "estado": "cancelado"
+  }'
+```
+
+---
+
+### 7. Eliminar un Préstamo
 
 ```bash
 curl -X DELETE http://localhost:8000/api/prestamos/1
 ```
 
-**Respuesta esperada (204 No Content):** Sin cuerpo de respuesta
+**Respuesta esperada (204 No Content)**: Sin cuerpo de respuesta
 
-## Pruebas de Validación (Casos de Error)
+---
+
+## Casos de Error y Validación
 
 ### 1. Crear Préstamo sin Capital Solicitado
 
@@ -191,7 +238,7 @@ curl -X POST http://localhost:8000/api/prestamos \
   }'
 ```
 
-**Respuesta esperada (400 Bad Request):**
+**Respuesta esperada (400 Bad Request)**:
 ```json
 {
   "error": {
@@ -203,6 +250,8 @@ curl -X POST http://localhost:8000/api/prestamos \
   }
 }
 ```
+
+---
 
 ### 2. Crear Préstamo con Capital Negativo
 
@@ -218,7 +267,7 @@ curl -X POST http://localhost:8000/api/prestamos \
   }'
 ```
 
-**Respuesta esperada (400 Bad Request):**
+**Respuesta esperada (400 Bad Request)**:
 ```json
 {
   "error": {
@@ -230,6 +279,8 @@ curl -X POST http://localhost:8000/api/prestamos \
   }
 }
 ```
+
+---
 
 ### 3. Crear Préstamo con Estado Inválido
 
@@ -245,7 +296,7 @@ curl -X POST http://localhost:8000/api/prestamos \
   }'
 ```
 
-**Respuesta esperada (400 Bad Request):**
+**Respuesta esperada (400 Bad Request)**:
 ```json
 {
   "error": {
@@ -257,6 +308,8 @@ curl -X POST http://localhost:8000/api/prestamos \
   }
 }
 ```
+
+---
 
 ### 4. Crear Préstamo con Local Inexistente
 
@@ -272,7 +325,7 @@ curl -X POST http://localhost:8000/api/prestamos \
   }'
 ```
 
-**Respuesta esperada (400 Bad Request):**
+**Respuesta esperada (400 Bad Request)**:
 ```json
 {
   "error": {
@@ -284,6 +337,8 @@ curl -X POST http://localhost:8000/api/prestamos \
   }
 }
 ```
+
+---
 
 ### 5. Crear Préstamo con Fecha Inválida
 
@@ -299,7 +354,7 @@ curl -X POST http://localhost:8000/api/prestamos \
   }'
 ```
 
-**Respuesta esperada (400 Bad Request):**
+**Respuesta esperada (400 Bad Request)**:
 ```json
 {
   "error": {
@@ -312,23 +367,9 @@ curl -X POST http://localhost:8000/api/prestamos \
 }
 ```
 
-### 6. Obtener Préstamo Inexistente
+---
 
-```bash
-curl http://localhost:8000/api/prestamos/99999
-```
-
-**Respuesta esperada (404 Not Found):**
-```json
-{
-  "error": {
-    "message": "Prestamo with id 99999 not found",
-    "code": "PRESTAMO_NOT_FOUND"
-  }
-}
-```
-
-### 7. Tipo de Interés Negativo
+### 6. Tipo de Interés Negativo
 
 ```bash
 curl -X POST http://localhost:8000/api/prestamos \
@@ -343,7 +384,7 @@ curl -X POST http://localhost:8000/api/prestamos \
   }'
 ```
 
-**Respuesta esperada (400 Bad Request):**
+**Respuesta esperada (400 Bad Request)**:
 ```json
 {
   "error": {
@@ -356,103 +397,83 @@ curl -X POST http://localhost:8000/api/prestamos \
 }
 ```
 
-## Pruebas con Postman/Insomnia
+---
 
-### Collection de Postman
+### 7. Capital Solicitado Excede el Máximo
 
-Puedes importar esta colección en Postman:
+```bash
+curl -X POST http://localhost:8000/api/prestamos \
+  -H "Content-Type: application/json" \
+  -d '{
+    "localId": 1,
+    "capitalSolicitado": 1000000000.00,
+    "totalADevolver": 1100000000.00,
+    "fechaConcesion": "2024-01-20",
+    "estado": "activo"
+  }'
+```
 
+**Respuesta esperada (400 Bad Request)**:
 ```json
 {
-  "info": {
-    "name": "Prestamo API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "Listar Préstamos",
-      "request": {
-        "method": "GET",
-        "url": "http://localhost:8000/api/prestamos"
-      }
-    },
-    {
-      "name": "Obtener Préstamo",
-      "request": {
-        "method": "GET",
-        "url": "http://localhost:8000/api/prestamos/1"
-      }
-    },
-    {
-      "name": "Crear Préstamo",
-      "request": {
-        "method": "POST",
-        "url": "http://localhost:8000/api/prestamos",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"localId\": 1,\n  \"entidadBancaria\": \"Banco Santander\",\n  \"numeroPrestamo\": \"PRE-2024-001\",\n  \"capitalSolicitado\": 200000.00,\n  \"totalADevolver\": 240000.00,\n  \"tipoInteres\": 4.5000,\n  \"fechaConcesion\": \"2024-01-20\",\n  \"estado\": \"activo\"\n}"
-        }
-      }
-    },
-    {
-      "name": "Actualizar Préstamo",
-      "request": {
-        "method": "PUT",
-        "url": "http://localhost:8000/api/prestamos/1",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"localId\": 1,\n  \"entidadBancaria\": \"BBVA\",\n  \"numeroPrestamo\": \"PRE-2024-001\",\n  \"capitalSolicitado\": 200000.00,\n  \"totalADevolver\": 235000.00,\n  \"tipoInteres\": 4.2000,\n  \"fechaConcesion\": \"2024-01-20\",\n  \"estado\": \"activo\"\n}"
-        }
-      }
-    },
-    {
-      "name": "Eliminar Préstamo",
-      "request": {
-        "method": "DELETE",
-        "url": "http://localhost:8000/api/prestamos/1"
-      }
+  "error": {
+    "message": "Validation failed",
+    "code": "VALIDATION_ERROR",
+    "details": {
+      "capitalSolicitado": ["El capital solicitado no puede exceder 999999999.99"]
     }
-  ]
+  }
 }
 ```
 
-## Verificación de la Base de Datos
+---
 
-Después de crear algunos préstamos, puedes verificar los datos directamente en la base de datos:
+## Casos de Prueba Válidos
 
-```bash
-cd api
-php bin/console doctrine:query:sql "SELECT * FROM prestamo"
-```
-
-O si estás usando SQLite:
+### Valores de Capital y Total
 
 ```bash
-sqlite3 api/var/data.db "SELECT * FROM prestamo"
+# Valores mínimos
+capitalSolicitado: 0.01
+totalADevolver: 0.01
+
+# Valores normales
+capitalSolicitado: 150000.00
+totalADevolver: 180000.00
+
+# Valores máximos
+capitalSolicitado: 999999999.99
+totalADevolver: 999999999.99
 ```
 
-## Scripts de Prueba Automatizados
+### Tipos de Interés Válidos
 
-Puedes crear un script bash para probar todos los endpoints:
+```bash
+0.0000      # Sin interés
+3.5000      # 3.5%
+4.2500      # 4.25%
+12.9999     # 12.9999%
+99.9999     # Máximo permitido
+```
+
+### Estados Válidos
+
+```bash
+activo      # Préstamo activo
+cancelado   # Préstamo cancelado
+finalizado  # Préstamo finalizado
+```
+
+---
+
+## Script de Prueba Completo
 
 ```bash
 #!/bin/bash
 
 BASE_URL="http://localhost:8000/api/prestamos"
 
-echo "1. Creando préstamo..."
+echo "=== 1. Creando préstamo ==="
 RESPONSE=$(curl -s -X POST "$BASE_URL" \
   -H "Content-Type: application/json" \
   -d '{
@@ -470,13 +491,13 @@ echo "$RESPONSE" | jq .
 PRESTAMO_ID=$(echo "$RESPONSE" | jq -r '.id')
 echo "Préstamo creado con ID: $PRESTAMO_ID"
 
-echo -e "\n2. Listando préstamos..."
+echo -e "\n=== 2. Listando préstamos ==="
 curl -s "$BASE_URL" | jq .
 
-echo -e "\n3. Obteniendo préstamo $PRESTAMO_ID..."
+echo -e "\n=== 3. Obteniendo préstamo $PRESTAMO_ID ==="
 curl -s "$BASE_URL/$PRESTAMO_ID" | jq .
 
-echo -e "\n4. Actualizando préstamo $PRESTAMO_ID..."
+echo -e "\n=== 4. Actualizando préstamo $PRESTAMO_ID ==="
 curl -s -X PUT "$BASE_URL/$PRESTAMO_ID" \
   -H "Content-Type: application/json" \
   -d '{
@@ -490,24 +511,44 @@ curl -s -X PUT "$BASE_URL/$PRESTAMO_ID" \
     "estado": "activo"
   }' | jq .
 
-echo -e "\n5. Eliminando préstamo $PRESTAMO_ID..."
+echo -e "\n=== 5. Eliminando préstamo $PRESTAMO_ID ==="
 curl -s -X DELETE "$BASE_URL/$PRESTAMO_ID" -w "\nHTTP Status: %{http_code}\n"
 
-echo -e "\n6. Verificando eliminación..."
+echo -e "\n=== 6. Verificando eliminación ==="
 curl -s "$BASE_URL/$PRESTAMO_ID" | jq .
 ```
 
-Guarda este script como `test_prestamo_api.sh` y ejecútalo:
+Guardar como `test_prestamo_api.sh` y ejecutar:
 
 ```bash
 chmod +x test_prestamo_api.sh
 ./test_prestamo_api.sh
 ```
 
+---
+
+## Verificación de la Base de Datos
+
+Después de crear algunos préstamos, puedes verificar los datos directamente:
+
+```bash
+cd api
+php bin/console doctrine:query:sql "SELECT * FROM prestamo"
+```
+
+O si usas SQLite:
+
+```bash
+sqlite3 api/var/data.db "SELECT * FROM prestamo"
+```
+
+---
+
 ## Notas Importantes
 
-1. Asegúrate de que el servidor esté corriendo antes de ejecutar las pruebas.
-2. Los IDs de los préstamos son autoincrementales, ajusta los IDs en los ejemplos según tu base de datos.
-3. Para las pruebas de creación, asegúrate de que exista el Local con el ID especificado.
-4. El módulo incluye validaciones robustas, por lo que los datos incorrectos serán rechazados con mensajes de error descriptivos.
-5. Los campos opcionales (`entidadBancaria`, `numeroPrestamo`, `tipoInteres`) pueden omitirse en las peticiones POST/PUT.
+1. Asegúrate de que el servidor esté corriendo antes de ejecutar las pruebas
+2. Los IDs son autoincrementales, ajusta según tu base de datos
+3. Debes tener al menos un Local creado antes de crear préstamos
+4. Los campos `entidadBancaria`, `numeroPrestamo` y `tipoInteres` son opcionales
+5. El soft delete marca `deletedAt` pero no elimina físicamente el registro
+6. Los préstamos eliminados no aparecen en listados por defecto (a menos que uses `onlyActive=false`)

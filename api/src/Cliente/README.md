@@ -1,6 +1,6 @@
 # Módulo Cliente
 
-Módulo de gestión de clientes siguiendo arquitectura hexagonal con CQRS.
+Gestión de clientes que alquilan trasteros siguiendo arquitectura hexagonal con CQRS.
 
 ## Estructura
 
