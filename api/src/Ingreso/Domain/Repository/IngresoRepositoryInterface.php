@@ -66,4 +66,20 @@ interface IngresoRepositoryInterface
     ): float;
 
     public function count(array $criteria = []): int;
+
+    /**
+     * @return Ingreso[]
+     */
+    public function findByTrasteroId(int $trasteroId): array;
+
+    /**
+     * @return Ingreso[]
+     */
+    public function findByLocalId(int $localId): array;
+
+    public function getTotalImporteByTrastero(int $trasteroId): float;
+
+    public function getTotalImporteByLocal(int $localId): float;
+
+    public function getTotalImporteByDateRange(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): float;
 }

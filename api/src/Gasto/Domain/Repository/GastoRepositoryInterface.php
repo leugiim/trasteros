@@ -66,4 +66,6 @@ interface GastoRepositoryInterface
     ): float;
 
     public function count(array $criteria = []): int;
+
+    public function getTotalImporteByDateRange(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): float;
 }

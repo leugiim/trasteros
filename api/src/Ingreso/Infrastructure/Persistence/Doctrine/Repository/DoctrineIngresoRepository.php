@@ -194,4 +194,82 @@ final class DoctrineIngresoRepository extends ServiceEntityRepository implements
     {
         return parent::count($criteria);
     }
+
+    /**
+     * @return Ingreso[]
+     */
+    public function findByTrasteroId(int $trasteroId): array
+    {
+        return $this->createQueryBuilder('i')
+            ->join('i.contrato', 'c')
+            ->join('c.trastero', 't')
+            ->where('t.id = :trasteroId')
+            ->andWhere('i.deletedAt IS NULL')
+            ->setParameter('trasteroId', $trasteroId)
+            ->orderBy('i.fechaPago', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return Ingreso[]
+     */
+    public function findByLocalId(int $localId): array
+    {
+        return $this->createQueryBuilder('i')
+            ->join('i.contrato', 'c')
+            ->join('c.trastero', 't')
+            ->join('t.local', 'l')
+            ->where('l.id = :localId')
+            ->andWhere('i.deletedAt IS NULL')
+            ->setParameter('localId', $localId)
+            ->orderBy('i.fechaPago', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function getTotalImporteByTrastero(int $trasteroId): float
+    {
+        $result = $this->createQueryBuilder('i')
+            ->select('SUM(i.importe) as total')
+            ->join('i.contrato', 'c')
+            ->join('c.trastero', 't')
+            ->where('t.id = :trasteroId')
+            ->andWhere('i.deletedAt IS NULL')
+            ->setParameter('trasteroId', $trasteroId)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result !== null ? (float) $result : 0.0;
+    }
+
+    public function getTotalImporteByLocal(int $localId): float
+    {
+        $result = $this->createQueryBuilder('i')
+            ->select('SUM(i.importe) as total')
+            ->join('i.contrato', 'c')
+            ->join('c.trastero', 't')
+            ->join('t.local', 'l')
+            ->where('l.id = :localId')
+            ->andWhere('i.deletedAt IS NULL')
+            ->setParameter('localId', $localId)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result !== null ? (float) $result : 0.0;
+    }
+
+    public function getTotalImporteByDateRange(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): float
+    {
+        $result = $this->createQueryBuilder('i')
+            ->select('SUM(i.importe) as total')
+            ->where('i.fechaPago BETWEEN :desde AND :hasta')
+            ->andWhere('i.deletedAt IS NULL')
+            ->setParameter('desde', $desde)
+            ->setParameter('hasta', $hasta)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result !== null ? (float) $result : 0.0;
+    }
 }

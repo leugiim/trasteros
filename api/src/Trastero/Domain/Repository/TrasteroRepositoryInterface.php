@@ -64,4 +64,15 @@ interface TrasteroRepositoryInterface
     public function getTotalIngresosMensualesOcupadosByLocal(int $localId): float;
 
     public function existsByNumeroAndLocal(string $numero, int $localId): bool;
+
+    /**
+     * @return Trastero[]
+     */
+    public function findDisponibles(): array;
+
+    public function countDisponibles(): int;
+
+    public function countOcupados(): int;
+
+    public function count(): int;
 }

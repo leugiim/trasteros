@@ -194,4 +194,18 @@ final class DoctrineGastoRepository extends ServiceEntityRepository implements G
     {
         return parent::count($criteria);
     }
+
+    public function getTotalImporteByDateRange(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): float
+    {
+        $result = $this->createQueryBuilder('g')
+            ->select('SUM(g.importe) as total')
+            ->where('g.fecha BETWEEN :desde AND :hasta')
+            ->andWhere('g.deletedAt IS NULL')
+            ->setParameter('desde', $desde)
+            ->setParameter('hasta', $hasta)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result !== null ? (float) $result : 0.0;
+    }
 }

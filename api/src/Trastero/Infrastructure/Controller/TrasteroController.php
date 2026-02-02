@@ -11,6 +11,8 @@ use App\Trastero\Application\Command\UpdateTrastero\UpdateTrasteroCommand;
 use App\Trastero\Application\DTO\TrasteroRequest;
 use App\Trastero\Application\DTO\TrasteroResponse;
 use App\Trastero\Application\Query\FindTrastero\FindTrasteroQuery;
+use App\Trastero\Application\Query\FindTrasterosByLocal\FindTrasterosByLocalQuery;
+use App\Trastero\Application\Query\FindTrasterosDisponibles\FindTrasterosDisponiblesQuery;
 use App\Trastero\Application\Query\ListTrasteros\ListTrasterosQuery;
 use App\Trastero\Domain\Exception\DuplicateTrasteroException;
 use App\Trastero\Domain\Exception\InvalidPrecioMensualException;
@@ -262,5 +264,39 @@ final class TrasteroController extends AbstractController
                 ],
             ], Response::HTTP_NOT_FOUND);
         }
+    }
+
+    #[Route('/local/{localId}', name: 'trasteros_by_local', methods: ['GET'], requirements: ['localId' => '\d+'])]
+    public function byLocal(int $localId): JsonResponse
+    {
+        $envelope = $this->queryBus->dispatch(new FindTrasterosByLocalQuery($localId));
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var TrasteroResponse[] $trasteros */
+        $trasteros = $handledStamp->getResult();
+
+        return $this->json([
+            'data' => array_map(fn(TrasteroResponse $trastero) => $trastero->toArray(), $trasteros),
+            'meta' => [
+                'total' => count($trasteros),
+            ],
+        ]);
+    }
+
+    #[Route('/disponibles', name: 'trasteros_disponibles', methods: ['GET'])]
+    public function disponibles(): JsonResponse
+    {
+        $envelope = $this->queryBus->dispatch(new FindTrasterosDisponiblesQuery());
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var TrasteroResponse[] $trasteros */
+        $trasteros = $handledStamp->getResult();
+
+        return $this->json([
+            'data' => array_map(fn(TrasteroResponse $trastero) => $trastero->toArray(), $trasteros),
+            'meta' => [
+                'total' => count($trasteros),
+            ],
+        ]);
     }
 }

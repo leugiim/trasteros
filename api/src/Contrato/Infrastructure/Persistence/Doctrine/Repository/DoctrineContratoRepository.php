@@ -129,4 +129,66 @@ final class DoctrineContratoRepository extends ServiceEntityRepository implement
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * @return Contrato[]
+     */
+    public function findProximosAVencer(int $dias = 30): array
+    {
+        $hoy = new \DateTimeImmutable();
+        $limite = $hoy->modify("+{$dias} days");
+
+        return $this->createQueryBuilder('c')
+            ->where('c.estado = :estado')
+            ->andWhere('c.fechaFin IS NOT NULL')
+            ->andWhere('c.fechaFin BETWEEN :hoy AND :limite')
+            ->andWhere('c.deletedAt IS NULL')
+            ->setParameter('estado', ContratoEstado::ACTIVO)
+            ->setParameter('hoy', $hoy)
+            ->setParameter('limite', $limite)
+            ->orderBy('c.fechaFin', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return Contrato[]
+     */
+    public function findConFianzaPendiente(): array
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.estado = :estado')
+            ->andWhere('c.fianzaPagada = false')
+            ->andWhere('c.deletedAt IS NULL')
+            ->setParameter('estado', ContratoEstado::ACTIVO)
+            ->orderBy('c.fechaInicio', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function remove(Contrato $contrato): void
+    {
+        $this->getEntityManager()->remove($contrato);
+        $this->getEntityManager()->flush();
+    }
+
+    public function countByEstado(ContratoEstado $estado): int
+    {
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->where('c.estado = :estado')
+            ->andWhere('c.deletedAt IS NULL')
+            ->setParameter('estado', $estado)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function count(): int
+    {
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->where('c.deletedAt IS NULL')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

@@ -28,4 +28,20 @@ interface ContratoRepositoryInterface
     public function hasContratoActivoTrastero(int $trasteroId): bool;
 
     public function findOneContratoActivoByTrastero(int $trasteroId): ?Contrato;
+
+    /**
+     * @return Contrato[]
+     */
+    public function findProximosAVencer(int $dias = 30): array;
+
+    /**
+     * @return Contrato[]
+     */
+    public function findConFianzaPendiente(): array;
+
+    public function remove(Contrato $contrato): void;
+
+    public function countByEstado(ContratoEstado $estado): int;
+
+    public function count(): int;
 }

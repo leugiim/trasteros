@@ -10,6 +10,7 @@ use App\Gasto\Application\Command\UpdateGasto\UpdateGastoCommand;
 use App\Gasto\Application\DTO\GastoRequest;
 use App\Gasto\Application\DTO\GastoResponse;
 use App\Gasto\Application\Query\FindGasto\FindGastoQuery;
+use App\Gasto\Application\Query\FindGastosByLocal\FindGastosByLocalQuery;
 use App\Gasto\Application\Query\ListGastos\ListGastosQuery;
 use App\Gasto\Domain\Exception\GastoNotFoundException;
 use App\Gasto\Domain\Exception\InvalidGastoCategoriaException;
@@ -283,5 +284,22 @@ final class GastoController extends AbstractController
                 ],
             ], Response::HTTP_NOT_FOUND);
         }
+    }
+
+    #[Route('/local/{localId}', name: 'gastos_by_local', methods: ['GET'], requirements: ['localId' => '\d+'])]
+    public function byLocal(int $localId): JsonResponse
+    {
+        $envelope = $this->queryBus->dispatch(new FindGastosByLocalQuery($localId));
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var GastoResponse[] $gastos */
+        $gastos = $handledStamp->getResult();
+
+        return $this->json([
+            'data' => array_map(fn(GastoResponse $gasto) => $gasto->toArray(), $gastos),
+            'meta' => [
+                'total' => count($gastos),
+            ],
+        ]);
     }
 }

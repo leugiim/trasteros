@@ -11,6 +11,9 @@ use App\Ingreso\Application\Command\UpdateIngreso\UpdateIngresoCommand;
 use App\Ingreso\Application\DTO\IngresoRequest;
 use App\Ingreso\Application\DTO\IngresoResponse;
 use App\Ingreso\Application\Query\FindIngreso\FindIngresoQuery;
+use App\Ingreso\Application\Query\FindIngresosByContrato\FindIngresosByContratoQuery;
+use App\Ingreso\Application\Query\FindIngresosByLocal\FindIngresosByLocalQuery;
+use App\Ingreso\Application\Query\FindIngresosByTrastero\FindIngresosByTrasteroQuery;
 use App\Ingreso\Application\Query\ListIngresos\ListIngresosQuery;
 use App\Ingreso\Domain\Exception\IngresoNotFoundException;
 use App\Ingreso\Domain\Exception\InvalidImporteException;
@@ -281,5 +284,56 @@ final class IngresoController extends AbstractController
                 ],
             ], Response::HTTP_NOT_FOUND);
         }
+    }
+
+    #[Route('/contrato/{contratoId}', name: 'ingresos_by_contrato', methods: ['GET'], requirements: ['contratoId' => '\d+'])]
+    public function byContrato(int $contratoId): JsonResponse
+    {
+        $envelope = $this->queryBus->dispatch(new FindIngresosByContratoQuery($contratoId));
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var IngresoResponse[] $ingresos */
+        $ingresos = $handledStamp->getResult();
+
+        return $this->json([
+            'data' => array_map(fn(IngresoResponse $ingreso) => $ingreso->toArray(), $ingresos),
+            'meta' => [
+                'total' => count($ingresos),
+            ],
+        ]);
+    }
+
+    #[Route('/trastero/{trasteroId}', name: 'ingresos_by_trastero', methods: ['GET'], requirements: ['trasteroId' => '\d+'])]
+    public function byTrastero(int $trasteroId): JsonResponse
+    {
+        $envelope = $this->queryBus->dispatch(new FindIngresosByTrasteroQuery($trasteroId));
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var IngresoResponse[] $ingresos */
+        $ingresos = $handledStamp->getResult();
+
+        return $this->json([
+            'data' => array_map(fn(IngresoResponse $ingreso) => $ingreso->toArray(), $ingresos),
+            'meta' => [
+                'total' => count($ingresos),
+            ],
+        ]);
+    }
+
+    #[Route('/local/{localId}', name: 'ingresos_by_local', methods: ['GET'], requirements: ['localId' => '\d+'])]
+    public function byLocal(int $localId): JsonResponse
+    {
+        $envelope = $this->queryBus->dispatch(new FindIngresosByLocalQuery($localId));
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var IngresoResponse[] $ingresos */
+        $ingresos = $handledStamp->getResult();
+
+        return $this->json([
+            'data' => array_map(fn(IngresoResponse $ingreso) => $ingreso->toArray(), $ingresos),
+            'meta' => [
+                'total' => count($ingresos),
+            ],
+        ]);
     }
 }

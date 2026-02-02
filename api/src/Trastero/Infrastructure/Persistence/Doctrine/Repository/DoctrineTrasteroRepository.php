@@ -207,4 +207,49 @@ final class DoctrineTrasteroRepository extends ServiceEntityRepository implement
     {
         return $this->findByNumeroAndLocal($numero, $localId) !== null;
     }
+
+    /**
+     * @return Trastero[]
+     */
+    public function findDisponibles(): array
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.estado = :estado')
+            ->andWhere('t.deletedAt IS NULL')
+            ->setParameter('estado', TrasteroEstado::DISPONIBLE)
+            ->orderBy('t.numero', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countDisponibles(): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.estado = :estado')
+            ->andWhere('t.deletedAt IS NULL')
+            ->setParameter('estado', TrasteroEstado::DISPONIBLE)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countOcupados(): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.estado = :estado')
+            ->andWhere('t.deletedAt IS NULL')
+            ->setParameter('estado', TrasteroEstado::OCUPADO)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function count(): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.deletedAt IS NULL')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

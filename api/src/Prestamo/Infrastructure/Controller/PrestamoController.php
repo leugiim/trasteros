@@ -11,6 +11,7 @@ use App\Prestamo\Application\Command\UpdatePrestamo\UpdatePrestamoCommand;
 use App\Prestamo\Application\DTO\PrestamoRequest;
 use App\Prestamo\Application\DTO\PrestamoResponse;
 use App\Prestamo\Application\Query\FindPrestamo\FindPrestamoQuery;
+use App\Prestamo\Application\Query\FindPrestamosByLocal\FindPrestamosByLocalQuery;
 use App\Prestamo\Application\Query\ListPrestamos\ListPrestamosQuery;
 use App\Prestamo\Domain\Exception\InvalidCapitalSolicitadoException;
 use App\Prestamo\Domain\Exception\InvalidPrestamoEstadoException;
@@ -294,5 +295,22 @@ final class PrestamoController extends AbstractController
                 ],
             ], Response::HTTP_NOT_FOUND);
         }
+    }
+
+    #[Route('/local/{localId}', name: 'prestamos_by_local', methods: ['GET'], requirements: ['localId' => '\d+'])]
+    public function byLocal(int $localId): JsonResponse
+    {
+        $envelope = $this->queryBus->dispatch(new FindPrestamosByLocalQuery($localId));
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var PrestamoResponse[] $prestamos */
+        $prestamos = $handledStamp->getResult();
+
+        return $this->json([
+            'data' => array_map(fn(PrestamoResponse $prestamo) => $prestamo->toArray(), $prestamos),
+            'meta' => [
+                'total' => count($prestamos),
+            ],
+        ]);
     }
 }

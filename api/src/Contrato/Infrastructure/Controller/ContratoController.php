@@ -16,6 +16,8 @@ use App\Contrato\Application\DTO\ContratoResponse;
 use App\Contrato\Application\Query\FindContrato\FindContratoQuery;
 use App\Contrato\Application\Query\FindContratosByCliente\FindContratosByClienteQuery;
 use App\Contrato\Application\Query\FindContratosByTrastero\FindContratosByTrasteroQuery;
+use App\Contrato\Application\Query\FindContratosFianzasPendientes\FindContratosFianzasPendientesQuery;
+use App\Contrato\Application\Query\FindContratosProximosAVencer\FindContratosProximosAVencerQuery;
 use App\Contrato\Application\Query\ListContratos\ListContratosQuery;
 use App\Contrato\Domain\Exception\ContratoNotFoundException;
 use App\Contrato\Domain\Exception\InvalidContratoDateException;
@@ -373,5 +375,42 @@ final class ContratoController extends AbstractController
                 ],
             ], Response::HTTP_NOT_FOUND);
         }
+    }
+
+    #[Route('/proximos-vencer', name: 'contratos_proximos_vencer', methods: ['GET'])]
+    public function proximosAVencer(Request $request): JsonResponse
+    {
+        $dias = $request->query->getInt('dias', 30);
+
+        $envelope = $this->queryBus->dispatch(new FindContratosProximosAVencerQuery($dias));
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var ContratoResponse[] $contratos */
+        $contratos = $handledStamp->getResult();
+
+        return $this->json([
+            'data' => array_map(fn(ContratoResponse $contrato) => $contrato->toArray(), $contratos),
+            'meta' => [
+                'total' => count($contratos),
+                'dias' => $dias,
+            ],
+        ]);
+    }
+
+    #[Route('/fianzas-pendientes', name: 'contratos_fianzas_pendientes', methods: ['GET'])]
+    public function fianzasPendientes(): JsonResponse
+    {
+        $envelope = $this->queryBus->dispatch(new FindContratosFianzasPendientesQuery());
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var ContratoResponse[] $contratos */
+        $contratos = $handledStamp->getResult();
+
+        return $this->json([
+            'data' => array_map(fn(ContratoResponse $contrato) => $contrato->toArray(), $contratos),
+            'meta' => [
+                'total' => count($contratos),
+            ],
+        ]);
     }
 }
