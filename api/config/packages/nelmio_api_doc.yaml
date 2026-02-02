@@ -1,0 +1,460 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: Trasteros API
+            description: API para la gestión de trasteros, contratos, clientes y finanzas
+            version: 1.0.0
+        servers:
+            - url: /api
+              description: API Server
+        components:
+            securitySchemes:
+                Bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+                    description: 'JWT Authorization header usando el esquema Bearer. Ejemplo: "Authorization: Bearer {token}"'
+            schemas:
+                Error:
+                    type: object
+                    properties:
+                        error:
+                            type: object
+                            properties:
+                                message:
+                                    type: string
+                                    example: 'Error description'
+                                code:
+                                    type: string
+                                    example: 'ERROR_CODE'
+                                details:
+                                    type: object
+                                    nullable: true
+                ValidationError:
+                    type: object
+                    properties:
+                        error:
+                            type: object
+                            properties:
+                                message:
+                                    type: string
+                                    example: 'Validation failed'
+                                code:
+                                    type: string
+                                    example: 'VALIDATION_ERROR'
+                                details:
+                                    type: object
+                                    additionalProperties:
+                                        type: array
+                                        items:
+                                            type: string
+                PaginatedMeta:
+                    type: object
+                    properties:
+                        total:
+                            type: integer
+                            example: 10
+                User:
+                    type: object
+                    properties:
+                        id:
+                            type: string
+                            format: uuid
+                        nombre:
+                            type: string
+                            example: 'Juan García'
+                        email:
+                            type: string
+                            format: email
+                        rol:
+                            type: string
+                            enum: [admin, gestor, readonly]
+                        activo:
+                            type: boolean
+                        createdAt:
+                            type: string
+                            format: date-time
+                        updatedAt:
+                            type: string
+                            format: date-time
+                Cliente:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        nombre:
+                            type: string
+                            example: 'Juan'
+                        apellidos:
+                            type: string
+                            example: 'García López'
+                        dniNie:
+                            type: string
+                            example: '12345678A'
+                        email:
+                            type: string
+                            format: email
+                        telefono:
+                            type: string
+                            example: '+34612345678'
+                        activo:
+                            type: boolean
+                        createdAt:
+                            type: string
+                            format: date-time
+                        updatedAt:
+                            type: string
+                            format: date-time
+                Direccion:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        tipoVia:
+                            type: string
+                            example: 'Calle'
+                            nullable: true
+                        nombreVia:
+                            type: string
+                            example: 'Gran Vía'
+                        numero:
+                            type: string
+                            example: '123'
+                            nullable: true
+                        piso:
+                            type: string
+                            example: '2'
+                            nullable: true
+                        puerta:
+                            type: string
+                            example: 'A'
+                            nullable: true
+                        codigoPostal:
+                            type: string
+                            example: '28001'
+                        ciudad:
+                            type: string
+                            example: 'Madrid'
+                        provincia:
+                            type: string
+                            example: 'Madrid'
+                        pais:
+                            type: string
+                            example: 'España'
+                        latitud:
+                            type: number
+                            format: float
+                            nullable: true
+                        longitud:
+                            type: number
+                            format: float
+                            nullable: true
+                        createdAt:
+                            type: string
+                            format: date-time
+                        updatedAt:
+                            type: string
+                            format: date-time
+                Local:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        nombre:
+                            type: string
+                            example: 'Nave Principal'
+                        direccionId:
+                            type: integer
+                        superficieTotal:
+                            type: number
+                            format: float
+                            example: 500.5
+                        numeroTrasteros:
+                            type: integer
+                            example: 20
+                        fechaCompra:
+                            type: string
+                            format: date
+                            nullable: true
+                        precioCompra:
+                            type: number
+                            format: float
+                            nullable: true
+                        referenciaCatastral:
+                            type: string
+                            nullable: true
+                        valorCatastral:
+                            type: number
+                            format: float
+                            nullable: true
+                        createdAt:
+                            type: string
+                            format: date-time
+                        updatedAt:
+                            type: string
+                            format: date-time
+                Trastero:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        localId:
+                            type: integer
+                        numero:
+                            type: string
+                            example: 'A-01'
+                        nombre:
+                            type: string
+                            example: 'Trastero pequeño'
+                            nullable: true
+                        superficie:
+                            type: number
+                            format: float
+                            example: 5.5
+                        precioMensual:
+                            type: number
+                            format: float
+                            example: 50.0
+                        estado:
+                            type: string
+                            enum: [disponible, ocupado, reservado, mantenimiento]
+                        createdAt:
+                            type: string
+                            format: date-time
+                        updatedAt:
+                            type: string
+                            format: date-time
+                Contrato:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        trasteroId:
+                            type: integer
+                        clienteId:
+                            type: integer
+                        fechaInicio:
+                            type: string
+                            format: date
+                        fechaFin:
+                            type: string
+                            format: date
+                            nullable: true
+                        precioMensual:
+                            type: number
+                            format: float
+                            example: 50.0
+                        fianza:
+                            type: number
+                            format: float
+                            example: 100.0
+                        fianzaPagada:
+                            type: boolean
+                        estado:
+                            type: string
+                            enum: [activo, finalizado, cancelado]
+                        createdAt:
+                            type: string
+                            format: date-time
+                        updatedAt:
+                            type: string
+                            format: date-time
+                Ingreso:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        contratoId:
+                            type: integer
+                        concepto:
+                            type: string
+                            example: 'Mensualidad Enero 2024'
+                        importe:
+                            type: number
+                            format: float
+                            example: 50.0
+                        fechaPago:
+                            type: string
+                            format: date
+                        categoria:
+                            type: string
+                            enum: [alquiler, fianza, otros]
+                        metodoPago:
+                            type: string
+                            enum: [efectivo, transferencia, tarjeta, domiciliacion, bizum]
+                        createdAt:
+                            type: string
+                            format: date-time
+                        updatedAt:
+                            type: string
+                            format: date-time
+                Gasto:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        localId:
+                            type: integer
+                        concepto:
+                            type: string
+                            example: 'Factura electricidad'
+                        importe:
+                            type: number
+                            format: float
+                            example: 150.0
+                        fecha:
+                            type: string
+                            format: date
+                        categoria:
+                            type: string
+                            enum: [suministros, mantenimiento, seguros, impuestos, comunidad, otros]
+                        descripcion:
+                            type: string
+                            nullable: true
+                        metodoPago:
+                            type: string
+                            enum: [efectivo, transferencia, tarjeta, domiciliacion, bizum]
+                        createdAt:
+                            type: string
+                            format: date-time
+                        updatedAt:
+                            type: string
+                            format: date-time
+                Prestamo:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        localId:
+                            type: integer
+                        capitalSolicitado:
+                            type: number
+                            format: float
+                            example: 100000.0
+                        totalADevolver:
+                            type: number
+                            format: float
+                            example: 120000.0
+                        fechaConcesion:
+                            type: string
+                            format: date
+                        entidadBancaria:
+                            type: string
+                            example: 'Banco Ejemplo'
+                        numeroPrestamo:
+                            type: string
+                            example: 'PREST-2024-001'
+                            nullable: true
+                        tipoInteres:
+                            type: number
+                            format: float
+                            example: 3.5
+                        estado:
+                            type: string
+                            enum: [activo, pagado, cancelado]
+                        createdAt:
+                            type: string
+                            format: date-time
+                        updatedAt:
+                            type: string
+                            format: date-time
+                DashboardStats:
+                    type: object
+                    properties:
+                        trasteros:
+                            type: object
+                            properties:
+                                total:
+                                    type: integer
+                                disponibles:
+                                    type: integer
+                                ocupados:
+                                    type: integer
+                                tasaOcupacion:
+                                    type: number
+                                    format: float
+                        contratos:
+                            type: object
+                            properties:
+                                activos:
+                                    type: integer
+                                total:
+                                    type: integer
+                                proximosAVencer:
+                                    type: integer
+                                fianzasPendientes:
+                                    type: integer
+                        entidades:
+                            type: object
+                            properties:
+                                clientes:
+                                    type: integer
+                                locales:
+                                    type: integer
+                        financiero:
+                            type: object
+                            properties:
+                                ingresosMes:
+                                    type: number
+                                    format: float
+                                gastosMes:
+                                    type: number
+                                    format: float
+                                balanceMes:
+                                    type: number
+                                    format: float
+                Rentabilidad:
+                    type: object
+                    properties:
+                        localId:
+                            type: integer
+                        localNombre:
+                            type: string
+                        ingresosTotales:
+                            type: number
+                            format: float
+                        gastosTotales:
+                            type: number
+                            format: float
+                        beneficioNeto:
+                            type: number
+                            format: float
+                        rentabilidad:
+                            type: number
+                            format: float
+                LoginResponse:
+                    type: object
+                    properties:
+                        token:
+                            type: string
+                            example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...'
+                        user:
+                            $ref: '#/components/schemas/User'
+        security:
+            - Bearer: []
+        tags:
+            - name: Auth
+              description: Autenticación y gestión de sesión
+            - name: Users
+              description: Gestión de usuarios del sistema
+            - name: Clientes
+              description: Gestión de clientes
+            - name: Locales
+              description: Gestión de locales/naves
+            - name: Trasteros
+              description: Gestión de trasteros
+            - name: Contratos
+              description: Gestión de contratos de alquiler
+            - name: Ingresos
+              description: Gestión de ingresos
+            - name: Gastos
+              description: Gestión de gastos
+            - name: Prestamos
+              description: Gestión de préstamos
+            - name: Direcciones
+              description: Gestión de direcciones
+            - name: Dashboard
+              description: Estadísticas y reportes
+    areas:
+        path_patterns:
+            - ^/api(?!/doc)

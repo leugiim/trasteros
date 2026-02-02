@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Trastero\Infrastructure\Controller;
 
+use App\Auth\Infrastructure\Attribute\Auth;
 use App\Local\Domain\Exception\LocalNotFoundException;
 use App\Trastero\Application\Command\CreateTrastero\CreateTrasteroCommand;
 use App\Trastero\Application\Command\DeleteTrastero\DeleteTrasteroCommand;
@@ -19,6 +20,7 @@ use App\Trastero\Domain\Exception\InvalidPrecioMensualException;
 use App\Trastero\Domain\Exception\InvalidSuperficieException;
 use App\Trastero\Domain\Exception\InvalidTrasteroEstadoException;
 use App\Trastero\Domain\Exception\TrasteroNotFoundException;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,10 +29,10 @@ use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Routing\Attribute\Route;
-use App\Auth\Infrastructure\Attribute\Auth;
 
 #[Route('/api/trasteros')]
 #[Auth]
+#[OA\Tag(name: 'Trasteros')]
 final class TrasteroController extends AbstractController
 {
     public function __construct(
@@ -40,6 +42,20 @@ final class TrasteroController extends AbstractController
     }
 
     #[Route('', name: 'trasteros_list', methods: ['GET'])]
+    #[OA\Get(summary: 'Listar trasteros', description: 'Obtiene la lista de todos los trasteros')]
+    #[OA\Parameter(name: 'localId', in: 'query', description: 'Filtrar por local', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Parameter(name: 'estado', in: 'query', description: 'Filtrar por estado', schema: new OA\Schema(type: 'string', enum: ['disponible', 'ocupado', 'reservado', 'mantenimiento']))]
+    #[OA\Parameter(name: 'onlyActive', in: 'query', description: 'Solo activos', schema: new OA\Schema(type: 'boolean'))]
+    #[OA\Response(
+        response: 200,
+        description: 'Lista de trasteros',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/Trastero')),
+                new OA\Property(property: 'meta', ref: '#/components/schemas/PaginatedMeta')
+            ]
+        )
+    )]
     public function list(Request $request): JsonResponse
     {
         $localId = $request->query->get('localId');
@@ -83,6 +99,10 @@ final class TrasteroController extends AbstractController
     }
 
     #[Route('/{id}', name: 'trasteros_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[OA\Get(summary: 'Obtener trastero', description: 'Obtiene los datos de un trastero por su ID')]
+    #[OA\Parameter(name: 'id', in: 'path', description: 'ID del trastero', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Trastero encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Trastero'))]
+    #[OA\Response(response: 404, description: 'Trastero no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function show(int $id): JsonResponse
     {
         try {
@@ -104,6 +124,24 @@ final class TrasteroController extends AbstractController
     }
 
     #[Route('', name: 'trasteros_create', methods: ['POST'])]
+    #[OA\Post(summary: 'Crear trastero', description: 'Crea un nuevo trastero')]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['localId', 'numero', 'superficie', 'precioMensual'],
+            properties: [
+                new OA\Property(property: 'localId', type: 'integer'),
+                new OA\Property(property: 'numero', type: 'string', example: 'A-01'),
+                new OA\Property(property: 'nombre', type: 'string', nullable: true),
+                new OA\Property(property: 'superficie', type: 'number', format: 'float', example: 5.5),
+                new OA\Property(property: 'precioMensual', type: 'number', format: 'float', example: 50.0),
+                new OA\Property(property: 'estado', type: 'string', enum: ['disponible', 'ocupado', 'reservado', 'mantenimiento'], default: 'disponible')
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: 'Trastero creado', content: new OA\JsonContent(ref: '#/components/schemas/Trastero'))]
+    #[OA\Response(response: 400, description: 'Error de validación', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError'))]
+    #[OA\Response(response: 409, description: 'Trastero duplicado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function create(#[MapRequestPayload] TrasteroRequest $request): JsonResponse
     {
         try {
@@ -173,6 +211,26 @@ final class TrasteroController extends AbstractController
     }
 
     #[Route('/{id}', name: 'trasteros_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
+    #[OA\Put(summary: 'Actualizar trastero', description: 'Actualiza los datos de un trastero')]
+    #[OA\Parameter(name: 'id', in: 'path', description: 'ID del trastero', schema: new OA\Schema(type: 'integer'))]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['localId', 'numero', 'superficie', 'precioMensual'],
+            properties: [
+                new OA\Property(property: 'localId', type: 'integer'),
+                new OA\Property(property: 'numero', type: 'string'),
+                new OA\Property(property: 'nombre', type: 'string', nullable: true),
+                new OA\Property(property: 'superficie', type: 'number', format: 'float'),
+                new OA\Property(property: 'precioMensual', type: 'number', format: 'float'),
+                new OA\Property(property: 'estado', type: 'string', enum: ['disponible', 'ocupado', 'reservado', 'mantenimiento'])
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: 'Trastero actualizado', content: new OA\JsonContent(ref: '#/components/schemas/Trastero'))]
+    #[OA\Response(response: 400, description: 'Error de validación', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError'))]
+    #[OA\Response(response: 404, description: 'Trastero no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
+    #[OA\Response(response: 409, description: 'Trastero duplicado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(int $id, #[MapRequestPayload] TrasteroRequest $request): JsonResponse
     {
         try {
@@ -250,6 +308,10 @@ final class TrasteroController extends AbstractController
     }
 
     #[Route('/{id}', name: 'trasteros_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
+    #[OA\Delete(summary: 'Eliminar trastero', description: 'Elimina un trastero')]
+    #[OA\Parameter(name: 'id', in: 'path', description: 'ID del trastero', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 204, description: 'Trastero eliminado')]
+    #[OA\Response(response: 404, description: 'Trastero no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function delete(int $id): JsonResponse
     {
         try {
@@ -267,6 +329,18 @@ final class TrasteroController extends AbstractController
     }
 
     #[Route('/local/{localId}', name: 'trasteros_by_local', methods: ['GET'], requirements: ['localId' => '\d+'])]
+    #[OA\Get(summary: 'Trasteros por local', description: 'Obtiene todos los trasteros de un local específico')]
+    #[OA\Parameter(name: 'localId', in: 'path', description: 'ID del local', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(
+        response: 200,
+        description: 'Lista de trasteros del local',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/Trastero')),
+                new OA\Property(property: 'meta', ref: '#/components/schemas/PaginatedMeta')
+            ]
+        )
+    )]
     public function byLocal(int $localId): JsonResponse
     {
         $envelope = $this->queryBus->dispatch(new FindTrasterosByLocalQuery($localId));
@@ -284,6 +358,17 @@ final class TrasteroController extends AbstractController
     }
 
     #[Route('/disponibles', name: 'trasteros_disponibles', methods: ['GET'])]
+    #[OA\Get(summary: 'Trasteros disponibles', description: 'Obtiene todos los trasteros disponibles para alquilar')]
+    #[OA\Response(
+        response: 200,
+        description: 'Lista de trasteros disponibles',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/Trastero')),
+                new OA\Property(property: 'meta', ref: '#/components/schemas/PaginatedMeta')
+            ]
+        )
+    )]
     public function disponibles(): JsonResponse
     {
         $envelope = $this->queryBus->dispatch(new FindTrasterosDisponiblesQuery());

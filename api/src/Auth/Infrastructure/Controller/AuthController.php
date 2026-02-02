@@ -11,6 +11,7 @@ use App\Auth\Domain\Exception\InvalidCredentialsException;
 use App\Auth\Domain\Exception\UserInactiveException;
 use App\Auth\Infrastructure\Attribute\Auth;
 use App\Users\Domain\Model\User;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,6 +22,7 @@ use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/auth')]
+#[OA\Tag(name: 'Auth')]
 final class AuthController extends AbstractController
 {
     public function __construct(
@@ -29,6 +31,49 @@ final class AuthController extends AbstractController
     }
 
     #[Route('/login', name: 'auth_login', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Iniciar sesión',
+        description: 'Autentica un usuario y devuelve un token JWT'
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['email', 'password'],
+            properties: [
+                new OA\Property(property: 'email', type: 'string', format: 'email', example: 'admin@trasteros.com'),
+                new OA\Property(property: 'password', type: 'string', format: 'password', example: 'password123')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Login exitoso',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'token', type: 'string', example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...'),
+                new OA\Property(
+                    property: 'user',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                        new OA\Property(property: 'email', type: 'string', format: 'email'),
+                        new OA\Property(property: 'nombre', type: 'string'),
+                        new OA\Property(property: 'rol', type: 'string', enum: ['admin', 'gestor', 'readonly'])
+                    ],
+                    type: 'object'
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Credenciales inválidas',
+        content: new OA\JsonContent(ref: '#/components/schemas/Error')
+    )]
+    #[OA\Response(
+        response: 403,
+        description: 'Usuario inactivo',
+        content: new OA\JsonContent(ref: '#/components/schemas/Error')
+    )]
     public function login(#[MapRequestPayload] LoginRequest $request): JsonResponse
     {
         try {
@@ -62,6 +107,23 @@ final class AuthController extends AbstractController
 
     #[Route('/me', name: 'auth_me', methods: ['GET'])]
     #[Auth]
+    #[OA\Get(
+        summary: 'Obtener usuario actual',
+        description: 'Devuelve los datos del usuario autenticado'
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Datos del usuario',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                new OA\Property(property: 'email', type: 'string', format: 'email'),
+                new OA\Property(property: 'nombre', type: 'string'),
+                new OA\Property(property: 'rol', type: 'string', enum: ['admin', 'gestor', 'readonly'])
+            ]
+        )
+    )]
+    #[OA\Response(response: 401, description: 'No autenticado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function me(Request $request): JsonResponse
     {
         /** @var User $user */
