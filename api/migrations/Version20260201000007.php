@@ -17,26 +17,26 @@ final class Version20260201000007 extends AbstractMigration
     public function up(Schema $schema): void
     {
         $this->addSql('CREATE TABLE contrato (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             trastero_id INT NOT NULL,
             cliente_id INT NOT NULL,
             fecha_inicio DATE NOT NULL,
             fecha_fin DATE DEFAULT NULL,
             precio_mensual DECIMAL(8,2) NOT NULL,
             fianza DECIMAL(8,2) DEFAULT NULL,
-            fianza_pagada BOOLEAN DEFAULT FALSE,
-            estado ENUM(\'activo\', \'finalizado\', \'cancelado\', \'pendiente\') DEFAULT \'activo\',
+            fianza_pagada INTEGER DEFAULT 0,
+            estado VARCHAR(20) NOT NULL,
             created_at DATETIME NOT NULL,
             created_by INT DEFAULT NULL,
             updated_at DATETIME NOT NULL,
             updated_by INT DEFAULT NULL,
             deleted_at DATETIME DEFAULT NULL,
             deleted_by INT DEFAULT NULL,
-            CONSTRAINT fk_contrato_trastero FOREIGN KEY (trastero_id) REFERENCES trastero(id) ON DELETE RESTRICT,
-            CONSTRAINT fk_contrato_cliente FOREIGN KEY (cliente_id) REFERENCES cliente(id) ON DELETE RESTRICT,
-            CONSTRAINT fk_contrato_created_by FOREIGN KEY (created_by) REFERENCES usuario(id) ON DELETE SET NULL,
-            CONSTRAINT fk_contrato_updated_by FOREIGN KEY (updated_by) REFERENCES usuario(id) ON DELETE SET NULL,
-            CONSTRAINT fk_contrato_deleted_by FOREIGN KEY (deleted_by) REFERENCES usuario(id) ON DELETE SET NULL
+            CONSTRAINT fk_contrato_trastero FOREIGN KEY (trastero_id) REFERENCES trastero(id),
+            CONSTRAINT fk_contrato_cliente FOREIGN KEY (cliente_id) REFERENCES cliente(id),
+            CONSTRAINT fk_contrato_created_by FOREIGN KEY (created_by) REFERENCES usuario(id),
+            CONSTRAINT fk_contrato_updated_by FOREIGN KEY (updated_by) REFERENCES usuario(id),
+            CONSTRAINT fk_contrato_deleted_by FOREIGN KEY (deleted_by) REFERENCES usuario(id)
         )');
 
         $this->addSql('CREATE INDEX idx_contrato_trastero_id ON contrato (trastero_id)');
