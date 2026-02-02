@@ -74,5 +74,5 @@ interface TrasteroRepositoryInterface
 
     public function countOcupados(): int;
 
-    public function count(): int;
+    public function count(array $criteria = []): int;
 }

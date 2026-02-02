@@ -244,7 +244,7 @@ final class DoctrineTrasteroRepository extends ServiceEntityRepository implement
             ->getSingleScalarResult();
     }
 
-    public function count(): int
+    public function count(array $criteria = []): int
     {
         return (int) $this->createQueryBuilder('t')
             ->select('COUNT(t.id)')

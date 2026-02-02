@@ -43,5 +43,5 @@ interface ContratoRepositoryInterface
 
     public function countByEstado(ContratoEstado $estado): int;
 
-    public function count(): int;
+    public function count(array $criteria = []): int;
 }

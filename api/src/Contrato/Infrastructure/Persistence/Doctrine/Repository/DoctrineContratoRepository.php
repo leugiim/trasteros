@@ -183,7 +183,7 @@ final class DoctrineContratoRepository extends ServiceEntityRepository implement
             ->getSingleScalarResult();
     }
 
-    public function count(): int
+    public function count(array $criteria = []): int
     {
         return (int) $this->createQueryBuilder('c')
             ->select('COUNT(c.id)')
