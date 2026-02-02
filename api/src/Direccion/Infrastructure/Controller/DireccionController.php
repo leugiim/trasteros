@@ -22,8 +22,10 @@ use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Auth\Infrastructure\Attribute\Auth;
 
 #[Route('/api/direcciones')]
+#[Auth]
 final class DireccionController extends AbstractController
 {
     public function __construct(

@@ -57,3 +57,13 @@ services:
     # Prestamo module - Repository binding
     App\Prestamo\Domain\Repository\PrestamoRepositoryInterface:
         class: App\Prestamo\Infrastructure\Persistence\Doctrine\Repository\DoctrinePrestamoRepository
+
+    # Auth module - Event Subscriber
+    App\Auth\Infrastructure\EventSubscriber\AuthSubscriber:
+        tags:
+            - { name: kernel.event_subscriber }
+
+    # Make MessageBus public for scripts
+    Symfony\Component\Messenger\MessageBusInterface:
+        alias: 'messenger.bus.default'
+        public: true

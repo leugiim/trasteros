@@ -14,18 +14,60 @@ doctrine:
             Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
         auto_mapping: true
         mappings:
-            App:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
-                alias: App
             Users:
                 type: attribute
                 is_bundle: false
                 dir: '%kernel.project_dir%/src/Users/Domain/Model'
                 prefix: 'App\Users\Domain\Model'
                 alias: Users
+            Cliente:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Cliente/Domain/Model'
+                prefix: 'App\Cliente\Domain\Model'
+                alias: Cliente
+            Contrato:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Contrato/Domain/Model'
+                prefix: 'App\Contrato\Domain\Model'
+                alias: Contrato
+            Direccion:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Direccion/Domain/Model'
+                prefix: 'App\Direccion\Domain\Model'
+                alias: Direccion
+            Gasto:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Gasto/Domain/Model'
+                prefix: 'App\Gasto\Domain\Model'
+                alias: Gasto
+            Ingreso:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Ingreso/Domain/Model'
+                prefix: 'App\Ingreso\Domain\Model'
+                alias: Ingreso
+            Local:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Local/Domain/Model'
+                prefix: 'App\Local\Domain\Model'
+                alias: Local
+            Prestamo:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Prestamo/Domain/Model'
+                prefix: 'App\Prestamo\Domain\Model'
+                alias: Prestamo
+            Trastero:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Trastero/Domain/Model'
+                prefix: 'App\Trastero\Domain\Model'
+                alias: Trastero
         controller_resolver:
             auto_mapping: false
 
