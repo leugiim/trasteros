@@ -10,6 +10,7 @@ enum MetodoPago: string
     case TRANSFERENCIA = 'transferencia';
     case TARJETA = 'tarjeta';
     case DOMICILIACION = 'domiciliacion';
+    case BIZUM = 'bizum';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum MetodoPago: string
             self::TRANSFERENCIA => 'Transferencia',
             self::TARJETA => 'Tarjeta',
             self::DOMICILIACION => 'Domiciliación',
+            self::BIZUM => 'Bizum',
         };
     }
 
