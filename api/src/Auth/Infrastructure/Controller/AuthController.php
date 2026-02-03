@@ -9,14 +9,12 @@ use App\Auth\Application\DTO\LoginRequest;
 use App\Auth\Application\DTO\LoginResponse;
 use App\Auth\Domain\Exception\InvalidCredentialsException;
 use App\Auth\Domain\Exception\UserInactiveException;
-use App\Auth\Infrastructure\Attribute\Auth;
-use App\Users\Domain\Model\User;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\Messenger\Exception\HandlerFailedException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Routing\Attribute\Route;
@@ -88,52 +86,28 @@ final class AuthController extends AbstractController
             $response = $handledStamp->getResult();
 
             return $this->json($response->toArray());
-        } catch (InvalidCredentialsException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'INVALID_CREDENTIALS',
-                ],
-            ], Response::HTTP_UNAUTHORIZED);
-        } catch (UserInactiveException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'USER_INACTIVE',
-                ],
-            ], Response::HTTP_FORBIDDEN);
+        } catch (HandlerFailedException $e) {
+            foreach ($e->getWrappedExceptions() as $nestedException) {
+                if ($nestedException instanceof InvalidCredentialsException) {
+                    return $this->json([
+                        'error' => [
+                            'message' => $nestedException->getMessage(),
+                            'code' => 'INVALID_CREDENTIALS',
+                        ],
+                    ], Response::HTTP_UNAUTHORIZED);
+                }
+
+                if ($nestedException instanceof UserInactiveException) {
+                    return $this->json([
+                        'error' => [
+                            'message' => $nestedException->getMessage(),
+                            'code' => 'USER_INACTIVE',
+                        ],
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            }
+
+            throw $e;
         }
-    }
-
-    #[Route('/me', name: 'auth_me', methods: ['GET'])]
-    #[Auth]
-    #[OA\Get(
-        summary: 'Obtener usuario actual',
-        description: 'Devuelve los datos del usuario autenticado'
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Datos del usuario',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                new OA\Property(property: 'email', type: 'string', format: 'email'),
-                new OA\Property(property: 'nombre', type: 'string'),
-                new OA\Property(property: 'rol', type: 'string', enum: ['admin', 'gestor', 'readonly'])
-            ]
-        )
-    )]
-    #[OA\Response(response: 401, description: 'No autenticado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
-    public function me(Request $request): JsonResponse
-    {
-        /** @var User $user */
-        $user = $request->attributes->get('authenticated_user');
-
-        return $this->json([
-            'id' => $user->id()->value,
-            'email' => $user->email()->value,
-            'nombre' => $user->nombre(),
-            'rol' => $user->rol()->value,
-        ]);
     }
 }

@@ -15,6 +15,7 @@ use App\Users\Application\Query\ListUsers\ListUsersQuery;
 use App\Users\Domain\Exception\InvalidEmailException;
 use App\Users\Domain\Exception\UserAlreadyExistsException;
 use App\Users\Domain\Exception\UserNotFoundException;
+use App\Users\Domain\Model\User;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -66,6 +67,29 @@ final class UserController extends AbstractController
                 'total' => count($users),
             ],
         ]);
+    }
+
+    #[Route('/me', name: 'users_me', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Obtener usuario actual',
+        description: 'Devuelve los datos del usuario autenticado'
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Datos del usuario',
+        content: new OA\JsonContent(ref: '#/components/schemas/User')
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'No autenticado',
+        content: new OA\JsonContent(ref: '#/components/schemas/Error')
+    )]
+    public function me(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->attributes->get('authenticated_user');
+
+        return $this->json(UserResponse::fromUser($user)->toArray());
     }
 
     #[Route('/{id}', name: 'users_show', methods: ['GET'])]
