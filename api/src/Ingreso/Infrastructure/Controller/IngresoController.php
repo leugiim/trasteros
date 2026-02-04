@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Ingreso\Infrastructure\Controller;
 
-use App\Contrato\Domain\Exception\ContratoNotFoundException;
 use App\Ingreso\Application\Command\CreateIngreso\CreateIngresoCommand;
 use App\Ingreso\Application\Command\DeleteIngreso\DeleteIngresoCommand;
 use App\Ingreso\Application\Command\UpdateIngreso\UpdateIngresoCommand;
@@ -15,10 +14,6 @@ use App\Ingreso\Application\Query\FindIngresosByContrato\FindIngresosByContratoQ
 use App\Ingreso\Application\Query\FindIngresosByLocal\FindIngresosByLocalQuery;
 use App\Ingreso\Application\Query\FindIngresosByTrastero\FindIngresosByTrasteroQuery;
 use App\Ingreso\Application\Query\ListIngresos\ListIngresosQuery;
-use App\Ingreso\Domain\Exception\IngresoNotFoundException;
-use App\Ingreso\Domain\Exception\InvalidImporteException;
-use App\Ingreso\Domain\Exception\InvalidIngresoCategoriaException;
-use App\Ingreso\Domain\Exception\InvalidMetodoPagoException;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -72,47 +67,25 @@ final class IngresoController extends AbstractController
             ? filter_var($onlyActive, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
             : null;
 
-        try {
-            $envelope = $this->queryBus->dispatch(new ListIngresosQuery(
-                contratoId: $contratoIdFilter,
-                categoria: $categoria,
-                desde: $desde,
-                hasta: $hasta,
-                onlyActive: $onlyActiveFilter
-            ));
+        $envelope = $this->queryBus->dispatch(new ListIngresosQuery(
+            contratoId: $contratoIdFilter,
+            categoria: $categoria,
+            desde: $desde,
+            hasta: $hasta,
+            onlyActive: $onlyActiveFilter
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var IngresoResponse[] $ingresos */
-            $ingresos = $handledStamp->getResult();
+        /** @var IngresoResponse[] $ingresos */
+        $ingresos = $handledStamp->getResult();
 
-            return $this->json([
-                'data' => array_map(fn(IngresoResponse $ingreso) => $ingreso->toArray(), $ingresos),
-                'meta' => [
-                    'total' => count($ingresos),
-                ],
-            ]);
-        } catch (InvalidIngresoCategoriaException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'categoria' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fecha' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json([
+            'data' => array_map(fn(IngresoResponse $ingreso) => $ingreso->toArray(), $ingresos),
+            'meta' => [
+                'total' => count($ingresos),
+            ],
+        ]);
     }
 
     #[Route('/{id}', name: 'ingresos_show', methods: ['GET'], requirements: ['id' => '\d+'])]
@@ -122,22 +95,13 @@ final class IngresoController extends AbstractController
     #[OA\Response(response: 404, description: 'Ingreso no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function show(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->queryBus->dispatch(new FindIngresoQuery($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->queryBus->dispatch(new FindIngresoQuery($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var IngresoResponse $ingreso */
-            $ingreso = $handledStamp->getResult();
+        /** @var IngresoResponse $ingreso */
+        $ingreso = $handledStamp->getResult();
 
-            return $this->json($ingreso->toArray());
-        } catch (IngresoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'INGRESO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($ingreso->toArray());
     }
 
     #[Route('', name: 'ingresos_create', methods: ['POST'])]
@@ -160,73 +124,21 @@ final class IngresoController extends AbstractController
     #[OA\Response(response: 400, description: 'Error de validacion', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError'))]
     public function create(#[MapRequestPayload] IngresoRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new CreateIngresoCommand(
-                contratoId: $request->contratoId,
-                concepto: $request->concepto,
-                importe: $request->importe,
-                fechaPago: $request->fechaPago,
-                categoria: $request->categoria,
-                metodoPago: $request->metodoPago
-            ));
+        $envelope = $this->commandBus->dispatch(new CreateIngresoCommand(
+            contratoId: $request->contratoId,
+            concepto: $request->concepto,
+            importe: $request->importe,
+            fechaPago: $request->fechaPago,
+            categoria: $request->categoria,
+            metodoPago: $request->metodoPago
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var IngresoResponse $ingreso */
-            $ingreso = $handledStamp->getResult();
+        /** @var IngresoResponse $ingreso */
+        $ingreso = $handledStamp->getResult();
 
-            return $this->json($ingreso->toArray(), Response::HTTP_CREATED);
-        } catch (ContratoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'contratoId' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidIngresoCategoriaException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'categoria' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidMetodoPagoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'metodoPago' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidImporteException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'importe' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fechaPago' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($ingreso->toArray(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'ingresos_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
@@ -251,81 +163,22 @@ final class IngresoController extends AbstractController
     #[OA\Response(response: 404, description: 'Ingreso no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(int $id, #[MapRequestPayload] IngresoRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new UpdateIngresoCommand(
-                id: $id,
-                contratoId: $request->contratoId,
-                concepto: $request->concepto,
-                importe: $request->importe,
-                fechaPago: $request->fechaPago,
-                categoria: $request->categoria,
-                metodoPago: $request->metodoPago
-            ));
+        $envelope = $this->commandBus->dispatch(new UpdateIngresoCommand(
+            id: $id,
+            contratoId: $request->contratoId,
+            concepto: $request->concepto,
+            importe: $request->importe,
+            fechaPago: $request->fechaPago,
+            categoria: $request->categoria,
+            metodoPago: $request->metodoPago
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var IngresoResponse $ingreso */
-            $ingreso = $handledStamp->getResult();
+        /** @var IngresoResponse $ingreso */
+        $ingreso = $handledStamp->getResult();
 
-            return $this->json($ingreso->toArray());
-        } catch (IngresoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'INGRESO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        } catch (ContratoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'contratoId' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidIngresoCategoriaException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'categoria' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidMetodoPagoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'metodoPago' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidImporteException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'importe' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fechaPago' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($ingreso->toArray());
     }
 
     #[Route('/{id}', name: 'ingresos_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
@@ -335,18 +188,9 @@ final class IngresoController extends AbstractController
     #[OA\Response(response: 404, description: 'Ingreso no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function delete(int $id): JsonResponse
     {
-        try {
-            $this->commandBus->dispatch(new DeleteIngresoCommand($id));
+        $this->commandBus->dispatch(new DeleteIngresoCommand($id));
 
-            return $this->json(null, Response::HTTP_NO_CONTENT);
-        } catch (IngresoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'INGRESO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
     #[Route('/contrato/{contratoId}', name: 'ingresos_by_contrato', methods: ['GET'], requirements: ['contratoId' => '\d+'])]

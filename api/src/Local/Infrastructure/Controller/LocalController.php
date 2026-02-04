@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Local\Infrastructure\Controller;
 
-use App\Direccion\Domain\Exception\DireccionNotFoundException;
 use App\Local\Application\Command\CreateLocal\CreateLocalCommand;
 use App\Local\Application\Command\DeleteLocal\DeleteLocalCommand;
 use App\Local\Application\Command\UpdateLocal\UpdateLocalCommand;
@@ -12,8 +11,6 @@ use App\Local\Application\DTO\LocalRequest;
 use App\Local\Application\DTO\LocalResponse;
 use App\Local\Application\Query\FindLocal\FindLocalQuery;
 use App\Local\Application\Query\ListLocales\ListLocalesQuery;
-use App\Local\Domain\Exception\InvalidReferenciaCatastralException;
-use App\Local\Domain\Exception\LocalNotFoundException;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -88,22 +85,13 @@ final class LocalController extends AbstractController
     #[OA\Response(response: 404, description: 'Local no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function show(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->queryBus->dispatch(new FindLocalQuery($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->queryBus->dispatch(new FindLocalQuery($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var LocalResponse $local */
-            $local = $handledStamp->getResult();
+        /** @var LocalResponse $local */
+        $local = $handledStamp->getResult();
 
-            return $this->json($local->toArray());
-        } catch (LocalNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'LOCAL_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($local->toArray());
     }
 
     #[Route('', name: 'locales_create', methods: ['POST'])]
@@ -128,55 +116,23 @@ final class LocalController extends AbstractController
     #[OA\Response(response: 400, description: 'Error de validacion', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError'))]
     public function create(#[MapRequestPayload] LocalRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new CreateLocalCommand(
-                nombre: $request->nombre,
-                direccionId: $request->direccionId,
-                superficieTotal: $request->superficieTotal,
-                numeroTrasteros: $request->numeroTrasteros,
-                fechaCompra: $request->fechaCompra,
-                precioCompra: $request->precioCompra,
-                referenciaCatastral: $request->referenciaCatastral,
-                valorCatastral: $request->valorCatastral
-            ));
+        $envelope = $this->commandBus->dispatch(new CreateLocalCommand(
+            nombre: $request->nombre,
+            direccionId: $request->direccionId,
+            superficieTotal: $request->superficieTotal,
+            numeroTrasteros: $request->numeroTrasteros,
+            fechaCompra: $request->fechaCompra,
+            precioCompra: $request->precioCompra,
+            referenciaCatastral: $request->referenciaCatastral,
+            valorCatastral: $request->valorCatastral
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var LocalResponse $local */
-            $local = $handledStamp->getResult();
+        /** @var LocalResponse $local */
+        $local = $handledStamp->getResult();
 
-            return $this->json($local->toArray(), Response::HTTP_CREATED);
-        } catch (DireccionNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'direccionId' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidReferenciaCatastralException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'referenciaCatastral' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fechaCompra' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($local->toArray(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'locales_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
@@ -203,63 +159,24 @@ final class LocalController extends AbstractController
     #[OA\Response(response: 404, description: 'Local no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(int $id, #[MapRequestPayload] LocalRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new UpdateLocalCommand(
-                id: $id,
-                nombre: $request->nombre,
-                direccionId: $request->direccionId,
-                superficieTotal: $request->superficieTotal,
-                numeroTrasteros: $request->numeroTrasteros,
-                fechaCompra: $request->fechaCompra,
-                precioCompra: $request->precioCompra,
-                referenciaCatastral: $request->referenciaCatastral,
-                valorCatastral: $request->valorCatastral
-            ));
+        $envelope = $this->commandBus->dispatch(new UpdateLocalCommand(
+            id: $id,
+            nombre: $request->nombre,
+            direccionId: $request->direccionId,
+            superficieTotal: $request->superficieTotal,
+            numeroTrasteros: $request->numeroTrasteros,
+            fechaCompra: $request->fechaCompra,
+            precioCompra: $request->precioCompra,
+            referenciaCatastral: $request->referenciaCatastral,
+            valorCatastral: $request->valorCatastral
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var LocalResponse $local */
-            $local = $handledStamp->getResult();
+        /** @var LocalResponse $local */
+        $local = $handledStamp->getResult();
 
-            return $this->json($local->toArray());
-        } catch (LocalNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'LOCAL_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        } catch (DireccionNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'direccionId' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidReferenciaCatastralException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'referenciaCatastral' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fechaCompra' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($local->toArray());
     }
 
     #[Route('/{id}', name: 'locales_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
@@ -269,17 +186,8 @@ final class LocalController extends AbstractController
     #[OA\Response(response: 404, description: 'Local no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function delete(int $id): JsonResponse
     {
-        try {
-            $this->commandBus->dispatch(new DeleteLocalCommand($id));
+        $this->commandBus->dispatch(new DeleteLocalCommand($id));
 
-            return $this->json(null, Response::HTTP_NO_CONTENT);
-        } catch (LocalNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'LOCAL_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 }

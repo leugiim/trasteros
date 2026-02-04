@@ -25,6 +25,10 @@ class LocalControllerTest extends ApiTestCase
             'pais' => 'Espana',
         ]);
 
+        if (!isset($response['data']['id'])) {
+            throw new \RuntimeException('Failed to create direccion for tests: ' . json_encode($response));
+        }
+
         $this->direccionId = $response['data']['id'];
     }
 
@@ -60,7 +64,7 @@ class LocalControllerTest extends ApiTestCase
 
         $this->assertResponseStatusCode(201, $response);
         $this->assertEquals('Nave Principal', $response['data']['nombre']);
-        $this->assertEquals($this->direccionId, $response['data']['direccionId']);
+        $this->assertEquals($this->direccionId, $response['data']['direccion']['id']);
         $this->assertEquals(500.5, $response['data']['superficieTotal']);
     }
 
@@ -72,8 +76,8 @@ class LocalControllerTest extends ApiTestCase
             'superficieTotal' => 100.0,
         ]);
 
-        $this->assertResponseStatusCode(400, $response);
-        $this->assertHasError($response, 'VALIDATION_ERROR');
+        $this->assertResponseStatusCode(404, $response);
+        $this->assertHasError($response, 'DIRECCION_NOT_FOUND');
     }
 
     public function testShowLocal(): void

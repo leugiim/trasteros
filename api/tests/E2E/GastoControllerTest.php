@@ -26,12 +26,20 @@ class GastoControllerTest extends ApiTestCase
             'pais' => 'Espana',
         ]);
 
+        if (!isset($direccionResponse['data']['id'])) {
+            throw new \RuntimeException('Failed to create direccion for tests: ' . json_encode($direccionResponse));
+        }
+
         // Create local
         $localResponse = $this->post('/api/locales', [
             'nombre' => 'Gasto Test Local',
             'direccionId' => $direccionResponse['data']['id'],
             'superficieTotal' => 500.0,
         ]);
+
+        if (!isset($localResponse['data']['id'])) {
+            throw new \RuntimeException('Failed to create local for tests: ' . json_encode($localResponse));
+        }
 
         $this->localId = $localResponse['data']['id'];
     }
@@ -82,8 +90,8 @@ class GastoControllerTest extends ApiTestCase
             'metodoPago' => 'efectivo',
         ]);
 
-        $this->assertResponseStatusCode(400, $response);
-        $this->assertHasError($response, 'VALIDATION_ERROR');
+        $this->assertResponseStatusCode(404, $response);
+        $this->assertHasError($response, 'LOCAL_NOT_FOUND');
     }
 
     public function testShowGasto(): void
@@ -154,7 +162,7 @@ class GastoControllerTest extends ApiTestCase
             'concepto' => 'Delete Test',
             'importe' => 100.0,
             'fecha' => '2024-04-15',
-            'categoria' => 'comunidad',
+            'categoria' => 'otros',
             'metodoPago' => 'efectivo',
         ]);
 
@@ -179,7 +187,7 @@ class GastoControllerTest extends ApiTestCase
             'importe' => 100.0,
             'fecha' => '2024-05-15',
             'categoria' => 'otros',
-            'metodoPago' => 'bizum',
+            'metodoPago' => 'transferencia',
         ]);
 
         $response = $this->get('/api/gastos/local/' . $this->localId);

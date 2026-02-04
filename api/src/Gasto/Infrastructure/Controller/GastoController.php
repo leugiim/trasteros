@@ -12,11 +12,6 @@ use App\Gasto\Application\DTO\GastoResponse;
 use App\Gasto\Application\Query\FindGasto\FindGastoQuery;
 use App\Gasto\Application\Query\FindGastosByLocal\FindGastosByLocalQuery;
 use App\Gasto\Application\Query\ListGastos\ListGastosQuery;
-use App\Gasto\Domain\Exception\GastoNotFoundException;
-use App\Gasto\Domain\Exception\InvalidGastoCategoriaException;
-use App\Gasto\Domain\Exception\InvalidImporteException;
-use App\Gasto\Domain\Exception\InvalidMetodoPagoException;
-use App\Local\Domain\Exception\LocalNotFoundException;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -70,47 +65,25 @@ final class GastoController extends AbstractController
             ? filter_var($onlyActive, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
             : null;
 
-        try {
-            $envelope = $this->queryBus->dispatch(new ListGastosQuery(
-                localId: $localIdFilter,
-                categoria: $categoria,
-                desde: $desde,
-                hasta: $hasta,
-                onlyActive: $onlyActiveFilter
-            ));
+        $envelope = $this->queryBus->dispatch(new ListGastosQuery(
+            localId: $localIdFilter,
+            categoria: $categoria,
+            desde: $desde,
+            hasta: $hasta,
+            onlyActive: $onlyActiveFilter
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var GastoResponse[] $gastos */
-            $gastos = $handledStamp->getResult();
+        /** @var GastoResponse[] $gastos */
+        $gastos = $handledStamp->getResult();
 
-            return $this->json([
-                'data' => array_map(fn(GastoResponse $gasto) => $gasto->toArray(), $gastos),
-                'meta' => [
-                    'total' => count($gastos),
-                ],
-            ]);
-        } catch (InvalidGastoCategoriaException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'categoria' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fecha' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json([
+            'data' => array_map(fn(GastoResponse $gasto) => $gasto->toArray(), $gastos),
+            'meta' => [
+                'total' => count($gastos),
+            ],
+        ]);
     }
 
     #[Route('/{id}', name: 'gastos_show', methods: ['GET'], requirements: ['id' => '\d+'])]
@@ -120,22 +93,13 @@ final class GastoController extends AbstractController
     #[OA\Response(response: 404, description: 'Gasto no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function show(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->queryBus->dispatch(new FindGastoQuery($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->queryBus->dispatch(new FindGastoQuery($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var GastoResponse $gasto */
-            $gasto = $handledStamp->getResult();
+        /** @var GastoResponse $gasto */
+        $gasto = $handledStamp->getResult();
 
-            return $this->json($gasto->toArray());
-        } catch (GastoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'GASTO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($gasto->toArray());
     }
 
     #[Route('', name: 'gastos_create', methods: ['POST'])]
@@ -159,74 +123,22 @@ final class GastoController extends AbstractController
     #[OA\Response(response: 400, description: 'Error de validacion', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError'))]
     public function create(#[MapRequestPayload] GastoRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new CreateGastoCommand(
-                localId: $request->localId,
-                concepto: $request->concepto,
-                importe: $request->importe,
-                fecha: $request->fecha,
-                categoria: $request->categoria,
-                descripcion: $request->descripcion,
-                metodoPago: $request->metodoPago
-            ));
+        $envelope = $this->commandBus->dispatch(new CreateGastoCommand(
+            localId: $request->localId,
+            concepto: $request->concepto,
+            importe: $request->importe,
+            fecha: $request->fecha,
+            categoria: $request->categoria,
+            descripcion: $request->descripcion,
+            metodoPago: $request->metodoPago
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var GastoResponse $gasto */
-            $gasto = $handledStamp->getResult();
+        /** @var GastoResponse $gasto */
+        $gasto = $handledStamp->getResult();
 
-            return $this->json($gasto->toArray(), Response::HTTP_CREATED);
-        } catch (LocalNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'localId' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidGastoCategoriaException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'categoria' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidMetodoPagoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'metodoPago' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidImporteException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'importe' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fecha' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($gasto->toArray(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'gastos_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
@@ -252,82 +164,23 @@ final class GastoController extends AbstractController
     #[OA\Response(response: 404, description: 'Gasto no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(int $id, #[MapRequestPayload] GastoRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new UpdateGastoCommand(
-                id: $id,
-                localId: $request->localId,
-                concepto: $request->concepto,
-                importe: $request->importe,
-                fecha: $request->fecha,
-                categoria: $request->categoria,
-                descripcion: $request->descripcion,
-                metodoPago: $request->metodoPago
-            ));
+        $envelope = $this->commandBus->dispatch(new UpdateGastoCommand(
+            id: $id,
+            localId: $request->localId,
+            concepto: $request->concepto,
+            importe: $request->importe,
+            fecha: $request->fecha,
+            categoria: $request->categoria,
+            descripcion: $request->descripcion,
+            metodoPago: $request->metodoPago
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var GastoResponse $gasto */
-            $gasto = $handledStamp->getResult();
+        /** @var GastoResponse $gasto */
+        $gasto = $handledStamp->getResult();
 
-            return $this->json($gasto->toArray());
-        } catch (GastoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'GASTO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        } catch (LocalNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'localId' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidGastoCategoriaException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'categoria' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidMetodoPagoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'metodoPago' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidImporteException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'importe' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fecha' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($gasto->toArray());
     }
 
     #[Route('/{id}', name: 'gastos_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
@@ -337,18 +190,9 @@ final class GastoController extends AbstractController
     #[OA\Response(response: 404, description: 'Gasto no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function delete(int $id): JsonResponse
     {
-        try {
-            $this->commandBus->dispatch(new DeleteGastoCommand($id));
+        $this->commandBus->dispatch(new DeleteGastoCommand($id));
 
-            return $this->json(null, Response::HTTP_NO_CONTENT);
-        } catch (GastoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'GASTO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
     #[Route('/local/{localId}', name: 'gastos_by_local', methods: ['GET'], requirements: ['localId' => '\d+'])]

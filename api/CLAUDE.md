@@ -21,6 +21,10 @@ php bin/console cache:clear
 php bin/console doctrine:database:create
 php bin/console doctrine:migrations:migrate
 php bin/console doctrine:migrations:diff    # Generate migration from entity changes
+php bin/console app:database:seeds          # Seed database with test data
+# or
+php scripts/seeds.php                       # Alternative: run seeds script directly
+php scripts/seeds.php --env=test            # Seed test database
 
 # Debug routes
 php bin/console debug:router
@@ -60,6 +64,37 @@ class MyEntity
     private ?int $id = null;
 }
 ```
+
+## Database Seeds
+
+The project includes a comprehensive seeding system for test data:
+
+**Command**: `php bin/console app:database:seeds`
+- Location: `src/Shared/Infrastructure/CLI/DatabaseSeedsCommand.php`
+- Creates complete test dataset: users, direcciones, locales, clientes, trasteros, contratos, gastos, ingresos, prestamos
+- Used automatically by E2E tests in `ApiTestCase::resetDatabase()`
+- Can be run manually for development environment
+
+**Script**: `php scripts/seeds.php [--env=dev|test]`
+- Wrapper script that calls the Symfony command
+- Supports environment selection via `--env` parameter
+- Default environment: `dev`
+
+**Test Data Created**:
+- 2 users (admin@trasteros.test, gestor@trasteros.test) - password: password123
+- 2 direcciones (Madrid, Barcelona)
+- 2 locales with associated data
+- 2 clientes, 2 trasteros, 2 contratos
+- Sample gastos, ingresos, and prestamos
+
+## Testing
+
+E2E tests extend `App\Tests\E2E\ApiTestCase` which:
+- Automatically resets SQLite test database before each test class
+- Runs migrations
+- Seeds database with complete test data
+- Provides helper methods: `authenticate()`, `get()`, `post()`, `put()`, `delete()`
+- Test database location: `var/data_tests_e2e.db`
 
 ## Environment Variables
 

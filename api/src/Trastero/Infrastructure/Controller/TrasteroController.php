@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Trastero\Infrastructure\Controller;
 
 use App\Auth\Infrastructure\Attribute\Auth;
-use App\Local\Domain\Exception\LocalNotFoundException;
 use App\Trastero\Application\Command\CreateTrastero\CreateTrasteroCommand;
 use App\Trastero\Application\Command\DeleteTrastero\DeleteTrasteroCommand;
 use App\Trastero\Application\Command\UpdateTrastero\UpdateTrasteroCommand;
@@ -15,11 +14,6 @@ use App\Trastero\Application\Query\FindTrastero\FindTrasteroQuery;
 use App\Trastero\Application\Query\FindTrasterosByLocal\FindTrasterosByLocalQuery;
 use App\Trastero\Application\Query\FindTrasterosDisponibles\FindTrasterosDisponiblesQuery;
 use App\Trastero\Application\Query\ListTrasteros\ListTrasterosQuery;
-use App\Trastero\Domain\Exception\DuplicateTrasteroException;
-use App\Trastero\Domain\Exception\InvalidPrecioMensualException;
-use App\Trastero\Domain\Exception\InvalidSuperficieException;
-use App\Trastero\Domain\Exception\InvalidTrasteroEstadoException;
-use App\Trastero\Domain\Exception\TrasteroNotFoundException;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -67,35 +61,23 @@ final class TrasteroController extends AbstractController
             ? filter_var($onlyActive, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
             : null;
 
-        try {
-            $envelope = $this->queryBus->dispatch(new ListTrasterosQuery(
-                localId: $localIdFilter,
-                estado: $estado,
-                onlyActive: $onlyActiveFilter
-            ));
+        $envelope = $this->queryBus->dispatch(new ListTrasterosQuery(
+            localId: $localIdFilter,
+            estado: $estado,
+            onlyActive: $onlyActiveFilter
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var TrasteroResponse[] $trasteros */
-            $trasteros = $handledStamp->getResult();
+        /** @var TrasteroResponse[] $trasteros */
+        $trasteros = $handledStamp->getResult();
 
-            return $this->json([
-                'data' => array_map(fn(TrasteroResponse $trastero) => $trastero->toArray(), $trasteros),
-                'meta' => [
-                    'total' => count($trasteros),
-                ],
-            ]);
-        } catch (InvalidTrasteroEstadoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'estado' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json([
+            'data' => array_map(fn(TrasteroResponse $trastero) => $trastero->toArray(), $trasteros),
+            'meta' => [
+                'total' => count($trasteros),
+            ],
+        ]);
     }
 
     #[Route('/{id}', name: 'trasteros_show', methods: ['GET'], requirements: ['id' => '\d+'])]
@@ -105,22 +87,13 @@ final class TrasteroController extends AbstractController
     #[OA\Response(response: 404, description: 'Trastero no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function show(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->queryBus->dispatch(new FindTrasteroQuery($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->queryBus->dispatch(new FindTrasteroQuery($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var TrasteroResponse $trastero */
-            $trastero = $handledStamp->getResult();
+        /** @var TrasteroResponse $trastero */
+        $trastero = $handledStamp->getResult();
 
-            return $this->json($trastero->toArray());
-        } catch (TrasteroNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'TRASTERO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($trastero->toArray());
     }
 
     #[Route('', name: 'trasteros_create', methods: ['POST'])]
@@ -144,70 +117,21 @@ final class TrasteroController extends AbstractController
     #[OA\Response(response: 409, description: 'Trastero duplicado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function create(#[MapRequestPayload] TrasteroRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new CreateTrasteroCommand(
-                localId: $request->localId,
-                numero: $request->numero,
-                superficie: $request->superficie,
-                precioMensual: $request->precioMensual,
-                nombre: $request->nombre,
-                estado: $request->estado
-            ));
+        $envelope = $this->commandBus->dispatch(new CreateTrasteroCommand(
+            localId: $request->localId,
+            numero: $request->numero,
+            superficie: $request->superficie,
+            precioMensual: $request->precioMensual,
+            nombre: $request->nombre,
+            estado: $request->estado
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var TrasteroResponse $trastero */
-            $trastero = $handledStamp->getResult();
+        /** @var TrasteroResponse $trastero */
+        $trastero = $handledStamp->getResult();
 
-            return $this->json($trastero->toArray(), Response::HTTP_CREATED);
-        } catch (LocalNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'localId' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (DuplicateTrasteroException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'DUPLICATE_TRASTERO',
-                ],
-            ], Response::HTTP_CONFLICT);
-        } catch (InvalidTrasteroEstadoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'estado' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidSuperficieException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'superficie' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidPrecioMensualException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'precioMensual' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($trastero->toArray(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'trasteros_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
@@ -233,78 +157,22 @@ final class TrasteroController extends AbstractController
     #[OA\Response(response: 409, description: 'Trastero duplicado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(int $id, #[MapRequestPayload] TrasteroRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new UpdateTrasteroCommand(
-                id: $id,
-                localId: $request->localId,
-                numero: $request->numero,
-                superficie: $request->superficie,
-                precioMensual: $request->precioMensual,
-                nombre: $request->nombre,
-                estado: $request->estado
-            ));
+        $envelope = $this->commandBus->dispatch(new UpdateTrasteroCommand(
+            id: $id,
+            localId: $request->localId,
+            numero: $request->numero,
+            superficie: $request->superficie,
+            precioMensual: $request->precioMensual,
+            nombre: $request->nombre,
+            estado: $request->estado
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var TrasteroResponse $trastero */
-            $trastero = $handledStamp->getResult();
+        /** @var TrasteroResponse $trastero */
+        $trastero = $handledStamp->getResult();
 
-            return $this->json($trastero->toArray());
-        } catch (TrasteroNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'TRASTERO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        } catch (LocalNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'localId' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (DuplicateTrasteroException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'DUPLICATE_TRASTERO',
-                ],
-            ], Response::HTTP_CONFLICT);
-        } catch (InvalidTrasteroEstadoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'estado' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidSuperficieException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'superficie' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidPrecioMensualException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'precioMensual' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($trastero->toArray());
     }
 
     #[Route('/{id}', name: 'trasteros_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
@@ -314,18 +182,9 @@ final class TrasteroController extends AbstractController
     #[OA\Response(response: 404, description: 'Trastero no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function delete(int $id): JsonResponse
     {
-        try {
-            $this->commandBus->dispatch(new DeleteTrasteroCommand($id));
+        $this->commandBus->dispatch(new DeleteTrasteroCommand($id));
 
-            return $this->json(null, Response::HTTP_NO_CONTENT);
-        } catch (TrasteroNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'TRASTERO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
     #[Route('/local/{localId}', name: 'trasteros_by_local', methods: ['GET'], requirements: ['localId' => '\d+'])]

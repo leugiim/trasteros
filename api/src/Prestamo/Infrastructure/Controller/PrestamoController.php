@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Prestamo\Infrastructure\Controller;
 
-use App\Local\Domain\Exception\LocalNotFoundException;
 use App\Prestamo\Application\Command\CreatePrestamo\CreatePrestamoCommand;
 use App\Prestamo\Application\Command\DeletePrestamo\DeletePrestamoCommand;
 use App\Prestamo\Application\Command\UpdatePrestamo\UpdatePrestamoCommand;
@@ -13,11 +12,6 @@ use App\Prestamo\Application\DTO\PrestamoResponse;
 use App\Prestamo\Application\Query\FindPrestamo\FindPrestamoQuery;
 use App\Prestamo\Application\Query\FindPrestamosByLocal\FindPrestamosByLocalQuery;
 use App\Prestamo\Application\Query\ListPrestamos\ListPrestamosQuery;
-use App\Prestamo\Domain\Exception\InvalidCapitalSolicitadoException;
-use App\Prestamo\Domain\Exception\InvalidPrestamoEstadoException;
-use App\Prestamo\Domain\Exception\InvalidTipoInteresException;
-use App\Prestamo\Domain\Exception\InvalidTotalADevolverException;
-use App\Prestamo\Domain\Exception\PrestamoNotFoundException;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -69,36 +63,24 @@ final class PrestamoController extends AbstractController
             ? filter_var($onlyActive, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
             : null;
 
-        try {
-            $envelope = $this->queryBus->dispatch(new ListPrestamosQuery(
-                localId: $localIdFilter,
-                estado: $estado,
-                entidadBancaria: $entidadBancaria,
-                onlyActive: $onlyActiveFilter
-            ));
+        $envelope = $this->queryBus->dispatch(new ListPrestamosQuery(
+            localId: $localIdFilter,
+            estado: $estado,
+            entidadBancaria: $entidadBancaria,
+            onlyActive: $onlyActiveFilter
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var PrestamoResponse[] $prestamos */
-            $prestamos = $handledStamp->getResult();
+        /** @var PrestamoResponse[] $prestamos */
+        $prestamos = $handledStamp->getResult();
 
-            return $this->json([
-                'data' => array_map(fn(PrestamoResponse $prestamo) => $prestamo->toArray(), $prestamos),
-                'meta' => [
-                    'total' => count($prestamos),
-                ],
-            ]);
-        } catch (InvalidPrestamoEstadoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'estado' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json([
+            'data' => array_map(fn(PrestamoResponse $prestamo) => $prestamo->toArray(), $prestamos),
+            'meta' => [
+                'total' => count($prestamos),
+            ],
+        ]);
     }
 
     #[Route('/{id}', name: 'prestamos_show', methods: ['GET'], requirements: ['id' => '\d+'])]
@@ -108,22 +90,13 @@ final class PrestamoController extends AbstractController
     #[OA\Response(response: 404, description: 'Prestamo no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function show(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->queryBus->dispatch(new FindPrestamoQuery($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->queryBus->dispatch(new FindPrestamoQuery($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var PrestamoResponse $prestamo */
-            $prestamo = $handledStamp->getResult();
+        /** @var PrestamoResponse $prestamo */
+        $prestamo = $handledStamp->getResult();
 
-            return $this->json($prestamo->toArray());
-        } catch (PrestamoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'PRESTAMO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($prestamo->toArray());
     }
 
     #[Route('', name: 'prestamos_create', methods: ['POST'])]
@@ -148,85 +121,23 @@ final class PrestamoController extends AbstractController
     #[OA\Response(response: 400, description: 'Error de validacion', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError'))]
     public function create(#[MapRequestPayload] PrestamoRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new CreatePrestamoCommand(
-                localId: $request->localId,
-                capitalSolicitado: $request->capitalSolicitado,
-                totalADevolver: $request->totalADevolver,
-                fechaConcesion: $request->fechaConcesion,
-                entidadBancaria: $request->entidadBancaria,
-                numeroPrestamo: $request->numeroPrestamo,
-                tipoInteres: $request->tipoInteres,
-                estado: $request->estado
-            ));
+        $envelope = $this->commandBus->dispatch(new CreatePrestamoCommand(
+            localId: $request->localId,
+            capitalSolicitado: $request->capitalSolicitado,
+            totalADevolver: $request->totalADevolver,
+            fechaConcesion: $request->fechaConcesion,
+            entidadBancaria: $request->entidadBancaria,
+            numeroPrestamo: $request->numeroPrestamo,
+            tipoInteres: $request->tipoInteres,
+            estado: $request->estado
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var PrestamoResponse $prestamo */
-            $prestamo = $handledStamp->getResult();
+        /** @var PrestamoResponse $prestamo */
+        $prestamo = $handledStamp->getResult();
 
-            return $this->json($prestamo->toArray(), Response::HTTP_CREATED);
-        } catch (LocalNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'localId' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidPrestamoEstadoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'estado' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidCapitalSolicitadoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'capitalSolicitado' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidTotalADevolverException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'totalADevolver' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidTipoInteresException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'tipoInteres' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fechaConcesion' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($prestamo->toArray(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'prestamos_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
@@ -253,93 +164,24 @@ final class PrestamoController extends AbstractController
     #[OA\Response(response: 404, description: 'Prestamo no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(int $id, #[MapRequestPayload] PrestamoRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new UpdatePrestamoCommand(
-                id: $id,
-                localId: $request->localId,
-                capitalSolicitado: $request->capitalSolicitado,
-                totalADevolver: $request->totalADevolver,
-                fechaConcesion: $request->fechaConcesion,
-                entidadBancaria: $request->entidadBancaria,
-                numeroPrestamo: $request->numeroPrestamo,
-                tipoInteres: $request->tipoInteres,
-                estado: $request->estado
-            ));
+        $envelope = $this->commandBus->dispatch(new UpdatePrestamoCommand(
+            id: $id,
+            localId: $request->localId,
+            capitalSolicitado: $request->capitalSolicitado,
+            totalADevolver: $request->totalADevolver,
+            fechaConcesion: $request->fechaConcesion,
+            entidadBancaria: $request->entidadBancaria,
+            numeroPrestamo: $request->numeroPrestamo,
+            tipoInteres: $request->tipoInteres,
+            estado: $request->estado
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var PrestamoResponse $prestamo */
-            $prestamo = $handledStamp->getResult();
+        /** @var PrestamoResponse $prestamo */
+        $prestamo = $handledStamp->getResult();
 
-            return $this->json($prestamo->toArray());
-        } catch (PrestamoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'PRESTAMO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        } catch (LocalNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'localId' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidPrestamoEstadoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'estado' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidCapitalSolicitadoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'capitalSolicitado' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidTotalADevolverException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'totalADevolver' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidTipoInteresException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'tipoInteres' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fechaConcesion' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($prestamo->toArray());
     }
 
     #[Route('/{id}', name: 'prestamos_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
@@ -349,18 +191,9 @@ final class PrestamoController extends AbstractController
     #[OA\Response(response: 404, description: 'Prestamo no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function delete(int $id): JsonResponse
     {
-        try {
-            $this->commandBus->dispatch(new DeletePrestamoCommand($id));
+        $this->commandBus->dispatch(new DeletePrestamoCommand($id));
 
-            return $this->json(null, Response::HTTP_NO_CONTENT);
-        } catch (PrestamoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'PRESTAMO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
     #[Route('/local/{localId}', name: 'prestamos_by_local', methods: ['GET'], requirements: ['localId' => '\d+'])]

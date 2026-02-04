@@ -48,27 +48,18 @@ abstract class ApiTestCase extends WebTestCase
             new NullOutput()
         );
 
-        // Create default admin user
-        self::createDefaultUser($kernel->getContainer());
+        // Run database seeds
+        $application->run(
+            new ArrayInput([
+                'command' => 'app:database:seeds',
+                '--no-interaction' => true,
+                '--env' => 'test',
+            ]),
+            new NullOutput()
+        );
 
         self::ensureKernelShutdown();
         self::$databaseInitialized = true;
-    }
-
-    private static function createDefaultUser(\Symfony\Component\DependencyInjection\ContainerInterface $container): void
-    {
-        /** @var \Symfony\Component\Messenger\MessageBusInterface $commandBus */
-        $commandBus = $container->get(\Symfony\Component\Messenger\MessageBusInterface::class);
-
-        $command = new \App\Users\Application\Command\CreateUser\CreateUserCommand(
-            nombre: 'Admin Test',
-            email: 'admin@trasteros.test',
-            password: 'password123',
-            rol: \App\Users\Domain\Model\UserRole::ADMIN->value,
-            activo: true
-        );
-
-        $commandBus->dispatch($command);
     }
 
     protected function setUp(): void

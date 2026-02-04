@@ -83,8 +83,8 @@ class PrestamoControllerTest extends ApiTestCase
             'tipoInteres' => 3.5,
         ]);
 
-        $this->assertResponseStatusCode(400, $response);
-        $this->assertHasError($response, 'VALIDATION_ERROR');
+        $this->assertResponseStatusCode(404, $response);
+        $this->assertHasError($response, 'LOCAL_NOT_FOUND');
     }
 
     public function testShowPrestamo(): void

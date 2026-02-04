@@ -87,22 +87,13 @@ final class ClienteController extends AbstractController
     #[OA\Response(response: 404, description: 'Cliente no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function show(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->queryBus->dispatch(new FindClienteQuery($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->queryBus->dispatch(new FindClienteQuery($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var ClienteResponse $cliente */
-            $cliente = $handledStamp->getResult();
+        /** @var ClienteResponse $cliente */
+        $cliente = $handledStamp->getResult();
 
-            return $this->json($cliente->toArray());
-        } catch (ClienteNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'CLIENTE_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($cliente->toArray());
     }
 
     #[Route('', name: 'clientes_create', methods: ['POST'])]
@@ -126,60 +117,21 @@ final class ClienteController extends AbstractController
     #[OA\Response(response: 409, description: 'DNI/NIE o email duplicado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function create(#[MapRequestPayload] ClienteRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new CreateClienteCommand(
-                nombre: $request->nombre,
-                apellidos: $request->apellidos,
-                dniNie: $request->dniNie,
-                email: $request->email,
-                telefono: $request->telefono,
-                activo: $request->activo
-            ));
+        $envelope = $this->commandBus->dispatch(new CreateClienteCommand(
+            nombre: $request->nombre,
+            apellidos: $request->apellidos,
+            dniNie: $request->dniNie,
+            email: $request->email,
+            telefono: $request->telefono,
+            activo: $request->activo
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var ClienteResponse $cliente */
-            $cliente = $handledStamp->getResult();
+        /** @var ClienteResponse $cliente */
+        $cliente = $handledStamp->getResult();
 
-            return $this->json($cliente->toArray(), Response::HTTP_CREATED);
-        } catch (InvalidDniNieException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'dniNie' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidEmailException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'email' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidTelefonoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'telefono' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (DuplicatedDniNieException | DuplicatedEmailException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'CONFLICT',
-                ],
-            ], Response::HTTP_CONFLICT);
-        }
+        return $this->json($cliente->toArray(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'clientes_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
@@ -205,68 +157,22 @@ final class ClienteController extends AbstractController
     #[OA\Response(response: 409, description: 'DNI/NIE o email duplicado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(int $id, #[MapRequestPayload] ClienteRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new UpdateClienteCommand(
-                id: $id,
-                nombre: $request->nombre,
-                apellidos: $request->apellidos,
-                dniNie: $request->dniNie,
-                email: $request->email,
-                telefono: $request->telefono,
-                activo: $request->activo
-            ));
+        $envelope = $this->commandBus->dispatch(new UpdateClienteCommand(
+            id: $id,
+            nombre: $request->nombre,
+            apellidos: $request->apellidos,
+            dniNie: $request->dniNie,
+            email: $request->email,
+            telefono: $request->telefono,
+            activo: $request->activo
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var ClienteResponse $cliente */
-            $cliente = $handledStamp->getResult();
+        /** @var ClienteResponse $cliente */
+        $cliente = $handledStamp->getResult();
 
-            return $this->json($cliente->toArray());
-        } catch (ClienteNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'CLIENTE_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        } catch (InvalidDniNieException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'dniNie' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidEmailException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'email' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidTelefonoException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'telefono' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (DuplicatedDniNieException | DuplicatedEmailException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'CONFLICT',
-                ],
-            ], Response::HTTP_CONFLICT);
-        }
+        return $this->json($cliente->toArray());
     }
 
     #[Route('/{id}', name: 'clientes_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
@@ -276,17 +182,8 @@ final class ClienteController extends AbstractController
     #[OA\Response(response: 404, description: 'Cliente no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function delete(int $id): JsonResponse
     {
-        try {
-            $this->commandBus->dispatch(new DeleteClienteCommand($id));
+        $this->commandBus->dispatch(new DeleteClienteCommand($id));
 
-            return $this->json(null, Response::HTTP_NO_CONTENT);
-        } catch (ClienteNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'CLIENTE_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 }

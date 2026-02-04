@@ -57,8 +57,8 @@ class DashboardControllerTest extends ApiTestCase
         $response = $this->get('/api/dashboard/rentabilidad');
 
         $this->assertResponseStatusCode(200, $response);
-        $this->assertArrayHasKey('data', $response['data']);
-        $this->assertIsArray($response['data']['data']);
+        $this->assertArrayHasKey('locales', $response['data']);
+        $this->assertIsArray($response['data']['locales']);
     }
 
     public function testGetRentabilidadWithDateRange(): void
@@ -66,7 +66,7 @@ class DashboardControllerTest extends ApiTestCase
         $response = $this->get('/api/dashboard/rentabilidad?fechaInicio=2024-01-01&fechaFin=2024-12-31');
 
         $this->assertResponseStatusCode(200, $response);
-        $this->assertArrayHasKey('data', $response['data']);
+        $this->assertArrayHasKey('locales', $response['data']);
     }
 
     public function testGetRentabilidadWithoutAuth(): void
@@ -90,12 +90,20 @@ class DashboardControllerTest extends ApiTestCase
             'pais' => 'Espana',
         ]);
 
+        if (!isset($direccionResponse['data']['id'])) {
+            throw new \RuntimeException('Failed to create direccion for tests: ' . json_encode($direccionResponse));
+        }
+
         // Create local
         $localResponse = $this->post('/api/locales', [
             'nombre' => 'Dashboard Test Local',
             'direccionId' => $direccionResponse['data']['id'],
             'superficieTotal' => 500.0,
         ]);
+
+        if (!isset($localResponse['data']['id'])) {
+            throw new \RuntimeException('Failed to create local for tests: ' . json_encode($localResponse));
+        }
 
         // Create trasteros
         $this->post('/api/trasteros', [
@@ -114,14 +122,22 @@ class DashboardControllerTest extends ApiTestCase
             'estado' => 'disponible',
         ]);
 
+        if (!isset($trasteroResponse['data']['id'])) {
+            throw new \RuntimeException('Failed to create trastero for tests: ' . json_encode($trasteroResponse));
+        }
+
         // Create cliente
         $clienteResponse = $this->post('/api/clientes', [
             'nombre' => 'Dashboard',
             'apellidos' => 'Test Cliente',
-            'dniNie' => '77777777M',
+            'dniNie' => '45678901G',
             'email' => 'dashboardtest@example.com',
             'telefono' => '+34612345678',
         ]);
+
+        if (!isset($clienteResponse['data']['id'])) {
+            throw new \RuntimeException('Failed to create cliente for tests: ' . json_encode($clienteResponse));
+        }
 
         // Create contrato
         $this->post('/api/contratos', [

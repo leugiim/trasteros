@@ -14,6 +14,7 @@ class UserControllerTest extends ApiTestCase
 
     public function testMeEndpointWithoutAuth(): void
     {
+        $this->authToken = null;
         $response = $this->get('/api/users/me');
 
         $this->assertResponseStatusCode(401, $response);
@@ -76,8 +77,8 @@ class UserControllerTest extends ApiTestCase
             'activo' => true,
         ]);
 
-        $this->assertResponseStatusCode(400, $response);
-        $this->assertHasError($response, 'VALIDATION_ERROR');
+        $this->assertResponseStatusCode(409, $response);
+        $this->assertHasError($response, 'USER_ALREADY_EXISTS');
     }
 
     public function testShowUser(): void

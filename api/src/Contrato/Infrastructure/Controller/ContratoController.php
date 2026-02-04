@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Contrato\Infrastructure\Controller;
 
-use App\Cliente\Domain\Exception\ClienteNotFoundException;
 use App\Contrato\Application\Command\CancelarContrato\CancelarContratoCommand;
 use App\Contrato\Application\Command\CreateContrato\CreateContratoCommand;
 use App\Contrato\Application\Command\DeleteContrato\DeleteContratoCommand;
@@ -19,12 +18,6 @@ use App\Contrato\Application\Query\FindContratosByTrastero\FindContratosByTraste
 use App\Contrato\Application\Query\FindContratosFianzasPendientes\FindContratosFianzasPendientesQuery;
 use App\Contrato\Application\Query\FindContratosProximosAVencer\FindContratosProximosAVencerQuery;
 use App\Contrato\Application\Query\ListContratos\ListContratosQuery;
-use App\Contrato\Domain\Exception\ContratoNotFoundException;
-use App\Contrato\Domain\Exception\InvalidContratoDateException;
-use App\Contrato\Domain\Exception\InvalidFianzaException;
-use App\Contrato\Domain\Exception\InvalidPrecioMensualException;
-use App\Contrato\Domain\Exception\TrasteroAlreadyRentedException;
-use App\Trastero\Domain\Exception\TrasteroNotFoundException;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -88,22 +81,13 @@ final class ContratoController extends AbstractController
     #[OA\Response(response: 404, description: 'Contrato no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function show(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->queryBus->dispatch(new FindContratoQuery($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->queryBus->dispatch(new FindContratoQuery($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var ContratoResponse $contrato */
-            $contrato = $handledStamp->getResult();
+        /** @var ContratoResponse $contrato */
+        $contrato = $handledStamp->getResult();
 
-            return $this->json($contrato->toArray());
-        } catch (ContratoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'CONTRATO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($contrato->toArray());
     }
 
     #[Route('/trastero/{trasteroId}', name: 'contratos_by_trastero', methods: ['GET'], requirements: ['trasteroId' => '\d+'])]
@@ -208,79 +192,23 @@ final class ContratoController extends AbstractController
     #[OA\Response(response: 409, description: 'Trastero ya alquilado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function create(#[MapRequestPayload] ContratoRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new CreateContratoCommand(
-                trasteroId: $request->trasteroId,
-                clienteId: $request->clienteId,
-                fechaInicio: $request->fechaInicio,
-                precioMensual: $request->precioMensual,
-                fechaFin: $request->fechaFin,
-                fianza: $request->fianza,
-                fianzaPagada: $request->fianzaPagada,
-                estado: $request->estado
-            ));
+        $envelope = $this->commandBus->dispatch(new CreateContratoCommand(
+            trasteroId: $request->trasteroId,
+            clienteId: $request->clienteId,
+            fechaInicio: $request->fechaInicio,
+            precioMensual: $request->precioMensual,
+            fechaFin: $request->fechaFin,
+            fianza: $request->fianza,
+            fianzaPagada: $request->fianzaPagada,
+            estado: $request->estado
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var ContratoResponse $contrato */
-            $contrato = $handledStamp->getResult();
+        /** @var ContratoResponse $contrato */
+        $contrato = $handledStamp->getResult();
 
-            return $this->json($contrato->toArray(), Response::HTTP_CREATED);
-        } catch (TrasteroNotFoundException | ClienteNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'RESOURCE_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        } catch (InvalidPrecioMensualException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'precioMensual' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidFianzaException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fianza' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidContratoDateException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fechaFin' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (TrasteroAlreadyRentedException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'TRASTERO_ALREADY_RENTED',
-                ],
-            ], Response::HTTP_CONFLICT);
-        } catch (\Exception $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'general' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($contrato->toArray(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'contratos_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
@@ -308,80 +236,24 @@ final class ContratoController extends AbstractController
     #[OA\Response(response: 409, description: 'Trastero ya alquilado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(int $id, #[MapRequestPayload] ContratoRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new UpdateContratoCommand(
-                id: $id,
-                trasteroId: $request->trasteroId,
-                clienteId: $request->clienteId,
-                fechaInicio: $request->fechaInicio,
-                precioMensual: $request->precioMensual,
-                fechaFin: $request->fechaFin,
-                fianza: $request->fianza,
-                fianzaPagada: $request->fianzaPagada,
-                estado: $request->estado
-            ));
+        $envelope = $this->commandBus->dispatch(new UpdateContratoCommand(
+            id: $id,
+            trasteroId: $request->trasteroId,
+            clienteId: $request->clienteId,
+            fechaInicio: $request->fechaInicio,
+            precioMensual: $request->precioMensual,
+            fechaFin: $request->fechaFin,
+            fianza: $request->fianza,
+            fianzaPagada: $request->fianzaPagada,
+            estado: $request->estado
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var ContratoResponse $contrato */
-            $contrato = $handledStamp->getResult();
+        /** @var ContratoResponse $contrato */
+        $contrato = $handledStamp->getResult();
 
-            return $this->json($contrato->toArray());
-        } catch (ContratoNotFoundException | TrasteroNotFoundException | ClienteNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'RESOURCE_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        } catch (InvalidPrecioMensualException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'precioMensual' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidFianzaException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fianza' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidContratoDateException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'fechaFin' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (TrasteroAlreadyRentedException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'TRASTERO_ALREADY_RENTED',
-                ],
-            ], Response::HTTP_CONFLICT);
-        } catch (\Exception $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'general' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($contrato->toArray());
     }
 
     #[Route('/{id}', name: 'contratos_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
@@ -391,18 +263,9 @@ final class ContratoController extends AbstractController
     #[OA\Response(response: 404, description: 'Contrato no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function delete(int $id): JsonResponse
     {
-        try {
-            $this->commandBus->dispatch(new DeleteContratoCommand($id));
+        $this->commandBus->dispatch(new DeleteContratoCommand($id));
 
-            return $this->json(null, Response::HTTP_NO_CONTENT);
-        } catch (ContratoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'CONTRATO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
     #[Route('/{id}/finalizar', name: 'contratos_finalizar', methods: ['PATCH'], requirements: ['id' => '\d+'])]
@@ -412,22 +275,13 @@ final class ContratoController extends AbstractController
     #[OA\Response(response: 404, description: 'Contrato no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function finalizar(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new FinalizarContratoCommand($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->commandBus->dispatch(new FinalizarContratoCommand($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var ContratoResponse $contrato */
-            $contrato = $handledStamp->getResult();
+        /** @var ContratoResponse $contrato */
+        $contrato = $handledStamp->getResult();
 
-            return $this->json($contrato->toArray());
-        } catch (ContratoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'CONTRATO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($contrato->toArray());
     }
 
     #[Route('/{id}/cancelar', name: 'contratos_cancelar', methods: ['PATCH'], requirements: ['id' => '\d+'])]
@@ -437,22 +291,13 @@ final class ContratoController extends AbstractController
     #[OA\Response(response: 404, description: 'Contrato no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function cancelar(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new CancelarContratoCommand($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->commandBus->dispatch(new CancelarContratoCommand($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var ContratoResponse $contrato */
-            $contrato = $handledStamp->getResult();
+        /** @var ContratoResponse $contrato */
+        $contrato = $handledStamp->getResult();
 
-            return $this->json($contrato->toArray());
-        } catch (ContratoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'CONTRATO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($contrato->toArray());
     }
 
     #[Route('/{id}/marcar-fianza-pagada', name: 'contratos_marcar_fianza_pagada', methods: ['PATCH'], requirements: ['id' => '\d+'])]
@@ -462,22 +307,13 @@ final class ContratoController extends AbstractController
     #[OA\Response(response: 404, description: 'Contrato no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function marcarFianzaPagada(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new MarcarFianzaPagadaCommand($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->commandBus->dispatch(new MarcarFianzaPagadaCommand($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var ContratoResponse $contrato */
-            $contrato = $handledStamp->getResult();
+        /** @var ContratoResponse $contrato */
+        $contrato = $handledStamp->getResult();
 
-            return $this->json($contrato->toArray());
-        } catch (ContratoNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'CONTRATO_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($contrato->toArray());
     }
 
     #[Route('/proximos-vencer', name: 'contratos_proximos_vencer', methods: ['GET'])]

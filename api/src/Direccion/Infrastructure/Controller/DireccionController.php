@@ -11,9 +11,6 @@ use App\Direccion\Application\DTO\DireccionRequest;
 use App\Direccion\Application\DTO\DireccionResponse;
 use App\Direccion\Application\Query\FindDireccion\FindDireccionQuery;
 use App\Direccion\Application\Query\ListDirecciones\ListDireccionesQuery;
-use App\Direccion\Domain\Exception\DireccionNotFoundException;
-use App\Direccion\Domain\Exception\InvalidCodigoPostalException;
-use App\Direccion\Domain\Exception\InvalidCoordenadasException;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -90,22 +87,13 @@ final class DireccionController extends AbstractController
     #[OA\Response(response: 404, description: 'Direccion no encontrada', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function show(int $id): JsonResponse
     {
-        try {
-            $envelope = $this->queryBus->dispatch(new FindDireccionQuery($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->queryBus->dispatch(new FindDireccionQuery($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var DireccionResponse $direccion */
-            $direccion = $handledStamp->getResult();
+        /** @var DireccionResponse $direccion */
+        $direccion = $handledStamp->getResult();
 
-            return $this->json($direccion->toArray());
-        } catch (DireccionNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'DIRECCION_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($direccion->toArray());
     }
 
     #[Route('', name: 'direcciones_create', methods: ['POST'])]
@@ -133,48 +121,26 @@ final class DireccionController extends AbstractController
     #[OA\Response(response: 400, description: 'Error de validacion', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError'))]
     public function create(#[MapRequestPayload] DireccionRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new CreateDireccionCommand(
-                nombreVia: $request->nombreVia,
-                codigoPostal: $request->codigoPostal,
-                ciudad: $request->ciudad,
-                provincia: $request->provincia,
-                pais: $request->pais,
-                tipoVia: $request->tipoVia,
-                numero: $request->numero,
-                piso: $request->piso,
-                puerta: $request->puerta,
-                latitud: $request->latitud,
-                longitud: $request->longitud
-            ));
+        $envelope = $this->commandBus->dispatch(new CreateDireccionCommand(
+            nombreVia: $request->nombreVia,
+            codigoPostal: $request->codigoPostal,
+            ciudad: $request->ciudad,
+            provincia: $request->provincia,
+            pais: $request->pais,
+            tipoVia: $request->tipoVia,
+            numero: $request->numero,
+            piso: $request->piso,
+            puerta: $request->puerta,
+            latitud: $request->latitud,
+            longitud: $request->longitud
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var DireccionResponse $direccion */
-            $direccion = $handledStamp->getResult();
+        /** @var DireccionResponse $direccion */
+        $direccion = $handledStamp->getResult();
 
-            return $this->json($direccion->toArray(), Response::HTTP_CREATED);
-        } catch (InvalidCodigoPostalException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'codigoPostal' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidCoordenadasException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'coordenadas' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($direccion->toArray(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'direcciones_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
@@ -204,56 +170,27 @@ final class DireccionController extends AbstractController
     #[OA\Response(response: 404, description: 'Direccion no encontrada', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(int $id, #[MapRequestPayload] DireccionRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new UpdateDireccionCommand(
-                id: $id,
-                nombreVia: $request->nombreVia,
-                codigoPostal: $request->codigoPostal,
-                ciudad: $request->ciudad,
-                provincia: $request->provincia,
-                pais: $request->pais,
-                tipoVia: $request->tipoVia,
-                numero: $request->numero,
-                piso: $request->piso,
-                puerta: $request->puerta,
-                latitud: $request->latitud,
-                longitud: $request->longitud
-            ));
+        $envelope = $this->commandBus->dispatch(new UpdateDireccionCommand(
+            id: $id,
+            nombreVia: $request->nombreVia,
+            codigoPostal: $request->codigoPostal,
+            ciudad: $request->ciudad,
+            provincia: $request->provincia,
+            pais: $request->pais,
+            tipoVia: $request->tipoVia,
+            numero: $request->numero,
+            piso: $request->piso,
+            puerta: $request->puerta,
+            latitud: $request->latitud,
+            longitud: $request->longitud
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var DireccionResponse $direccion */
-            $direccion = $handledStamp->getResult();
+        /** @var DireccionResponse $direccion */
+        $direccion = $handledStamp->getResult();
 
-            return $this->json($direccion->toArray());
-        } catch (DireccionNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'DIRECCION_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        } catch (InvalidCodigoPostalException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'codigoPostal' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        } catch (InvalidCoordenadasException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'coordenadas' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($direccion->toArray());
     }
 
     #[Route('/{id}', name: 'direcciones_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
@@ -263,17 +200,8 @@ final class DireccionController extends AbstractController
     #[OA\Response(response: 404, description: 'Direccion no encontrada', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function delete(int $id): JsonResponse
     {
-        try {
-            $this->commandBus->dispatch(new DeleteDireccionCommand($id));
+        $this->commandBus->dispatch(new DeleteDireccionCommand($id));
 
-            return $this->json(null, Response::HTTP_NO_CONTENT);
-        } catch (DireccionNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'DIRECCION_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 }

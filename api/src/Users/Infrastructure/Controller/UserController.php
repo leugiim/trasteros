@@ -12,9 +12,6 @@ use App\Users\Application\DTO\UserRequest;
 use App\Users\Application\DTO\UserResponse;
 use App\Users\Application\Query\FindUser\FindUserQuery;
 use App\Users\Application\Query\ListUsers\ListUsersQuery;
-use App\Users\Domain\Exception\InvalidEmailException;
-use App\Users\Domain\Exception\UserAlreadyExistsException;
-use App\Users\Domain\Exception\UserNotFoundException;
 use App\Users\Domain\Model\User;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -99,22 +96,13 @@ final class UserController extends AbstractController
     #[OA\Response(response: 404, description: 'Usuario no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function show(string $id): JsonResponse
     {
-        try {
-            $envelope = $this->queryBus->dispatch(new FindUserQuery($id));
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $envelope = $this->queryBus->dispatch(new FindUserQuery($id));
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var UserResponse $user */
-            $user = $handledStamp->getResult();
+        /** @var UserResponse $user */
+        $user = $handledStamp->getResult();
 
-            return $this->json($user->toArray());
-        } catch (UserNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'USER_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json($user->toArray());
     }
 
     #[Route('', name: 'users_create', methods: ['POST'])]
@@ -137,51 +125,32 @@ final class UserController extends AbstractController
     #[OA\Response(response: 409, description: 'El usuario ya existe', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function create(#[MapRequestPayload] UserRequest $request): JsonResponse
     {
-        try {
-            if ($request->password === null) {
-                return $this->json([
-                    'error' => [
-                        'message' => 'Validation failed',
-                        'code' => 'VALIDATION_ERROR',
-                        'details' => [
-                            'password' => ['La contraseña es obligatoria'],
-                        ],
-                    ],
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            $envelope = $this->commandBus->dispatch(new CreateUserCommand(
-                nombre: $request->nombre,
-                email: $request->email,
-                password: $request->password,
-                rol: $request->rol,
-                activo: $request->activo
-            ));
-
-            $handledStamp = $envelope->last(HandledStamp::class);
-
-            /** @var UserResponse $user */
-            $user = $handledStamp->getResult();
-
-            return $this->json($user->toArray(), Response::HTTP_CREATED);
-        } catch (UserAlreadyExistsException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'USER_ALREADY_EXISTS',
-                ],
-            ], Response::HTTP_CONFLICT);
-        } catch (InvalidEmailException $e) {
+        if ($request->password === null) {
             return $this->json([
                 'error' => [
                     'message' => 'Validation failed',
                     'code' => 'VALIDATION_ERROR',
                     'details' => [
-                        'email' => [$e->getMessage()],
+                        'password' => ['La contraseña es obligatoria'],
                     ],
                 ],
             ], Response::HTTP_BAD_REQUEST);
         }
+
+        $envelope = $this->commandBus->dispatch(new CreateUserCommand(
+            nombre: $request->nombre,
+            email: $request->email,
+            password: $request->password,
+            rol: $request->rol,
+            activo: $request->activo
+        ));
+
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var UserResponse $user */
+        $user = $handledStamp->getResult();
+
+        return $this->json($user->toArray(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'users_update', methods: ['PUT'])]
@@ -206,47 +175,21 @@ final class UserController extends AbstractController
     #[OA\Response(response: 409, description: 'Email ya en uso', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(string $id, #[MapRequestPayload] UserRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new UpdateUserCommand(
-                id: $id,
-                nombre: $request->nombre,
-                email: $request->email,
-                rol: $request->rol,
-                activo: $request->activo,
-                password: $request->password
-            ));
+        $envelope = $this->commandBus->dispatch(new UpdateUserCommand(
+            id: $id,
+            nombre: $request->nombre,
+            email: $request->email,
+            rol: $request->rol,
+            activo: $request->activo,
+            password: $request->password
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        $handledStamp = $envelope->last(HandledStamp::class);
 
-            /** @var UserResponse $user */
-            $user = $handledStamp->getResult();
+        /** @var UserResponse $user */
+        $user = $handledStamp->getResult();
 
-            return $this->json($user->toArray());
-        } catch (UserNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'USER_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        } catch (UserAlreadyExistsException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'USER_ALREADY_EXISTS',
-                ],
-            ], Response::HTTP_CONFLICT);
-        } catch (InvalidEmailException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'email' => [$e->getMessage()],
-                    ],
-                ],
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        return $this->json($user->toArray());
     }
 
     #[Route('/{id}', name: 'users_delete', methods: ['DELETE'])]
@@ -256,17 +199,8 @@ final class UserController extends AbstractController
     #[OA\Response(response: 404, description: 'Usuario no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function delete(string $id): JsonResponse
     {
-        try {
-            $this->commandBus->dispatch(new DeleteUserCommand($id));
+        $this->commandBus->dispatch(new DeleteUserCommand($id));
 
-            return $this->json(null, Response::HTTP_NO_CONTENT);
-        } catch (UserNotFoundException $e) {
-            return $this->json([
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'code' => 'USER_NOT_FOUND',
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 }

@@ -83,8 +83,8 @@ class ClienteControllerTest extends ApiTestCase
             'telefono' => '+34612345678',
         ]);
 
-        $this->assertResponseStatusCode(400, $response);
-        $this->assertHasError($response, 'VALIDATION_ERROR');
+        $this->assertResponseStatusCode(409, $response);
+        $this->assertHasError($response, 'ALREADY_EXISTS');
     }
 
     public function testShowCliente(): void
