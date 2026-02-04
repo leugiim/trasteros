@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Ingreso\Application\Command\CreateIngreso;
 
 use App\Contrato\Domain\Exception\ContratoNotFoundException;
-use App\Contrato\Domain\Model\ContratoId;
 use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
 use App\Ingreso\Application\DTO\IngresoResponse;
 use App\Ingreso\Domain\Exception\InvalidIngresoCategoriaException;
@@ -28,7 +27,7 @@ final readonly class CreateIngresoCommandHandler
 
     public function __invoke(CreateIngresoCommand $command): IngresoResponse
     {
-        $contrato = $this->contratoRepository->findById(ContratoId::fromInt($command->contratoId));
+        $contrato = $this->contratoRepository->findById($command->contratoId);
 
         if ($contrato === null) {
             throw ContratoNotFoundException::withId($command->contratoId);

@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'direccion')]
+#[ORM\Index(name: 'idx_direccion_deleted_at', columns: ['deleted_at'])]
 #[ORM\HasLifecycleCallbacks]
 class Direccion
 {

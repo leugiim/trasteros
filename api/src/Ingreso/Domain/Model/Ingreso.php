@@ -11,6 +11,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'ingreso')]
+#[ORM\Index(name: 'idx_ingreso_fecha_pago', columns: ['fecha_pago'])]
+#[ORM\Index(name: 'idx_ingreso_categoria', columns: ['categoria'])]
+#[ORM\Index(name: 'idx_ingreso_deleted_at', columns: ['deleted_at'])]
 #[ORM\HasLifecycleCallbacks]
 class Ingreso
 {

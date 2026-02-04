@@ -10,6 +10,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'cliente')]
+#[ORM\Index(name: 'idx_cliente_dni_nie', columns: ['dni_nie'])]
+#[ORM\Index(name: 'idx_cliente_email', columns: ['email'])]
+#[ORM\Index(name: 'idx_cliente_deleted_at', columns: ['deleted_at'])]
 #[ORM\HasLifecycleCallbacks]
 class Cliente
 {

@@ -11,6 +11,10 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'prestamo')]
+#[ORM\Index(name: 'idx_prestamo_estado', columns: ['estado'])]
+#[ORM\Index(name: 'idx_prestamo_fecha_concesion', columns: ['fecha_concesion'])]
+#[ORM\Index(name: 'idx_prestamo_entidad_bancaria', columns: ['entidad_bancaria'])]
+#[ORM\Index(name: 'idx_prestamo_deleted_at', columns: ['deleted_at'])]
 #[ORM\HasLifecycleCallbacks]
 class Prestamo
 {
@@ -32,7 +36,7 @@ class Prestamo
     #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2)]
     private string $capitalSolicitado;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2)]
+    #[ORM\Column(name: 'total_a_devolver', type: Types::DECIMAL, precision: 12, scale: 2)]
     private string $totalADevolver;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 4, nullable: true)]

@@ -12,6 +12,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'trastero')]
 #[ORM\UniqueConstraint(name: 'unique_trastero_local', columns: ['local_id', 'numero'])]
+#[ORM\Index(name: 'idx_trastero_estado', columns: ['estado'])]
+#[ORM\Index(name: 'idx_trastero_deleted_at', columns: ['deleted_at'])]
 #[ORM\HasLifecycleCallbacks]
 class Trastero
 {

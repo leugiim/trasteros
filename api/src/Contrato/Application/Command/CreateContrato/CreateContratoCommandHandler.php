@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Contrato\Application\Command\CreateContrato;
 
 use App\Cliente\Domain\Exception\ClienteNotFoundException;
+use App\Cliente\Domain\Model\ClienteId;
 use App\Cliente\Domain\Repository\ClienteRepositoryInterface;
 use App\Contrato\Application\DTO\ContratoResponse;
 use App\Contrato\Domain\Event\ContratoCreated;
@@ -16,6 +17,7 @@ use App\Contrato\Domain\Model\Fianza;
 use App\Contrato\Domain\Model\PrecioMensual;
 use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
 use App\Trastero\Domain\Exception\TrasteroNotFoundException;
+use App\Trastero\Domain\Model\TrasteroId;
 use App\Trastero\Domain\Repository\TrasteroRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -33,17 +35,19 @@ final readonly class CreateContratoCommandHandler
 
     public function __invoke(CreateContratoCommand $command): ContratoResponse
     {
-        $trastero = $this->trasteroRepository->findById($command->trasteroId);
+        $trasteroId = TrasteroId::fromInt($command->trasteroId);
+        $trastero = $this->trasteroRepository->findById($trasteroId);
         if ($trastero === null) {
             throw new TrasteroNotFoundException($command->trasteroId);
         }
 
-        $cliente = $this->clienteRepository->findById($command->clienteId);
+        $clienteId = ClienteId::fromInt($command->clienteId);
+        $cliente = $this->clienteRepository->findById($clienteId);
         if ($cliente === null) {
             throw new ClienteNotFoundException($command->clienteId);
         }
 
-        if ($this->contratoRepository->hasContratoActivoTrastero($command->trasteroId)) {
+        if ($this->contratoRepository->hasContratoActivoTrastero($trasteroId->value)) {
             throw new TrasteroAlreadyRentedException($command->trasteroId);
         }
 

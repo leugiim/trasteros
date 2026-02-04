@@ -13,6 +13,10 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'contrato')]
+#[ORM\Index(name: 'idx_contrato_estado', columns: ['estado'])]
+#[ORM\Index(name: 'idx_contrato_fecha_inicio', columns: ['fecha_inicio'])]
+#[ORM\Index(name: 'idx_contrato_fecha_fin', columns: ['fecha_fin'])]
+#[ORM\Index(name: 'idx_contrato_deleted_at', columns: ['deleted_at'])]
 #[ORM\HasLifecycleCallbacks]
 class Contrato
 {
