@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Contrato\Application\Command\UpdateContrato;
 
 use App\Cliente\Domain\Exception\ClienteNotFoundException;
+use App\Cliente\Domain\Model\ClienteId;
 use App\Cliente\Domain\Repository\ClienteRepositoryInterface;
 use App\Contrato\Application\DTO\ContratoResponse;
 use App\Contrato\Domain\Exception\ContratoNotFoundException;
@@ -15,6 +16,7 @@ use App\Contrato\Domain\Model\Fianza;
 use App\Contrato\Domain\Model\PrecioMensual;
 use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
 use App\Trastero\Domain\Exception\TrasteroNotFoundException;
+use App\Trastero\Domain\Model\TrasteroId;
 use App\Trastero\Domain\Repository\TrasteroRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -32,17 +34,19 @@ final readonly class UpdateContratoCommandHandler
     {
         $contrato = $this->contratoRepository->findById($command->id);
         if ($contrato === null) {
-            throw new ContratoNotFoundException($command->id);
+            throw ContratoNotFoundException::withId($command->id);
         }
 
-        $trastero = $this->trasteroRepository->findById($command->trasteroId);
+        $trasteroId = TrasteroId::fromInt($command->trasteroId);
+        $trastero = $this->trasteroRepository->findById($trasteroId);
         if ($trastero === null) {
-            throw new TrasteroNotFoundException($command->trasteroId);
+            throw TrasteroNotFoundException::withId($command->trasteroId);
         }
 
-        $cliente = $this->clienteRepository->findById($command->clienteId);
+        $clienteId = ClienteId::fromInt($command->clienteId);
+        $cliente = $this->clienteRepository->findById($clienteId);
         if ($cliente === null) {
-            throw new ClienteNotFoundException($command->clienteId);
+            throw ClienteNotFoundException::withId($command->clienteId);
         }
 
         if ($contrato->trastero()->id()->value !== $command->trasteroId) {

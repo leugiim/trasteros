@@ -21,7 +21,7 @@ final readonly class FindContratoQueryHandler
     {
         $contrato = $this->contratoRepository->findById($query->id);
         if ($contrato === null) {
-            throw new ContratoNotFoundException($query->id);
+            throw ContratoNotFoundException::withId($query->id);
         }
 
         return ContratoResponse::fromContrato($contrato);

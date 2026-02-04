@@ -123,8 +123,8 @@ class ContratoControllerTest extends ApiTestCase
             'fianza' => 200.0,
         ]);
 
-        // Note: Currently returns 500 due to bug in error handling, should be 404
-        $this->assertResponseStatusCode(500, $response);
+        $this->assertResponseStatusCode(404, $response);
+        $this->assertHasError($response, 'TRASTERO_NOT_FOUND');
     }
 
     public function testShowContrato(): void
@@ -179,8 +179,11 @@ class ContratoControllerTest extends ApiTestCase
             'fianzaPagada' => true,
         ]);
 
-        // Note: Currently returns 500 due to bug in UpdateContratoCommandHandler (type error)
-        $this->assertResponseStatusCode(500, $response);
+        $this->assertResponseStatusCode(200, $response);
+        $this->assertEquals(130.0, $response['data']['precioMensual']);
+        $this->assertEquals(260.0, $response['data']['fianza']);
+        $this->assertTrue($response['data']['fianzaPagada']);
+        $this->assertEquals('2025-03-01', $response['data']['fechaFin']);
     }
 
     public function testDeleteContrato(): void

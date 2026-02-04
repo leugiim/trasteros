@@ -138,8 +138,8 @@ class IngresoControllerTest extends ApiTestCase
             'metodoPago' => 'efectivo',
         ]);
 
-        // Note: Currently returns 500 due to bug in ContratoNotFoundException (missing withId method)
-        $this->assertResponseStatusCode(500, $response);
+        $this->assertResponseStatusCode(404, $response);
+        $this->assertHasError($response, 'CONTRATO_NOT_FOUND');
     }
 
     public function testShowIngreso(): void
@@ -195,8 +195,11 @@ class IngresoControllerTest extends ApiTestCase
             'metodoPago' => 'tarjeta',
         ]);
 
-        // Note: Currently returns 500 due to bug in UpdateIngresoCommandHandler (type error)
-        $this->assertResponseStatusCode(500, $response);
+        $this->assertResponseStatusCode(200, $response);
+        $this->assertEquals('Updated Concepto', $response['data']['concepto']);
+        $this->assertEquals(120.0, $response['data']['importe']);
+        $this->assertEquals('otros', $response['data']['categoria']);
+        $this->assertEquals('tarjeta', $response['data']['metodoPago']);
     }
 
     public function testDeleteIngreso(): void

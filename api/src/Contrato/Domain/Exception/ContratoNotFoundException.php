@@ -6,8 +6,8 @@ namespace App\Contrato\Domain\Exception;
 
 final class ContratoNotFoundException extends \DomainException
 {
-    public function __construct(int $id)
+    public static function withId(int $id): self
     {
-        parent::__construct(sprintf('Contrato with id %d not found', $id));
+        return new self(sprintf('Contrato with id %d not found', $id));
     }
 }

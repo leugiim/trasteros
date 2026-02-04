@@ -21,7 +21,7 @@ final readonly class MarcarFianzaPagadaCommandHandler
     {
         $contrato = $this->contratoRepository->findById($command->id);
         if ($contrato === null) {
-            throw new ContratoNotFoundException($command->id);
+            throw ContratoNotFoundException::withId($command->id);
         }
 
         $contrato->marcarFianzaPagada();

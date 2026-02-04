@@ -38,13 +38,13 @@ final readonly class CreateContratoCommandHandler
         $trasteroId = TrasteroId::fromInt($command->trasteroId);
         $trastero = $this->trasteroRepository->findById($trasteroId);
         if ($trastero === null) {
-            throw new TrasteroNotFoundException($command->trasteroId);
+            throw TrasteroNotFoundException::withId($command->trasteroId);
         }
 
         $clienteId = ClienteId::fromInt($command->clienteId);
         $cliente = $this->clienteRepository->findById($clienteId);
         if ($cliente === null) {
-            throw new ClienteNotFoundException($command->clienteId);
+            throw ClienteNotFoundException::withId($command->clienteId);
         }
 
         if ($this->contratoRepository->hasContratoActivoTrastero($trasteroId->value)) {

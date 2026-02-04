@@ -24,7 +24,7 @@ final readonly class CancelarContratoCommandHandler
     {
         $contrato = $this->contratoRepository->findById($command->id);
         if ($contrato === null) {
-            throw new ContratoNotFoundException($command->id);
+            throw ContratoNotFoundException::withId($command->id);
         }
 
         $contrato->cancelar();

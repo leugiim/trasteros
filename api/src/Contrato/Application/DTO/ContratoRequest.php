@@ -21,12 +21,12 @@ final readonly class ContratoRequest
         #[Assert\Type(type: 'string', message: 'La fecha de inicio debe ser una cadena')]
         public string $fechaInicio,
 
-        public ?string $fechaFin = null,
-
         #[Assert\NotBlank(message: 'El precio mensual es obligatorio')]
         #[Assert\Positive(message: 'El precio mensual debe ser positivo')]
         #[Assert\Type(type: 'float', message: 'El precio mensual debe ser un número')]
         public float $precioMensual,
+
+        public ?string $fechaFin = null,
 
         #[Assert\PositiveOrZero(message: 'La fianza debe ser positiva o cero')]
         #[Assert\Type(type: 'float', message: 'La fianza debe ser un número')]

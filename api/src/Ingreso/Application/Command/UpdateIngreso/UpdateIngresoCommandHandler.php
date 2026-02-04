@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Ingreso\Application\Command\UpdateIngreso;
 
 use App\Contrato\Domain\Exception\ContratoNotFoundException;
-use App\Contrato\Domain\Model\ContratoId;
 use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
 use App\Ingreso\Application\DTO\IngresoResponse;
 use App\Ingreso\Domain\Exception\IngresoNotFoundException;
@@ -35,7 +34,7 @@ final readonly class UpdateIngresoCommandHandler
             throw IngresoNotFoundException::withId($command->id);
         }
 
-        $contrato = $this->contratoRepository->findById(ContratoId::fromInt($command->contratoId));
+        $contrato = $this->contratoRepository->findById($command->contratoId);
 
         if ($contrato === null) {
             throw ContratoNotFoundException::withId($command->contratoId);
