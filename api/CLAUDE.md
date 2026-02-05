@@ -103,3 +103,45 @@ Key variables in `.env`:
 - `JWT_SECRET_KEY` / `JWT_PUBLIC_KEY` - Paths to JWT keys
 - `JWT_PASSPHRASE` - Passphrase for JWT private key
 - `CORS_ALLOW_ORIGIN` - Allowed CORS origins regex
+
+## API Reference
+
+Full OpenAPI 3.0 specification available at `openapi.json` (regenerate with `php bin/console nelmio:apidoc:dump --format=json > openapi.json`).
+
+### Endpoints Summary
+
+| Resource | Endpoints |
+|----------|-----------|
+| Auth | `POST /api/auth/login` |
+| Users | `GET/POST /api/users`, `GET/PUT/DELETE /api/users/{id}` |
+| Clientes | `GET/POST /api/clientes`, `GET/PUT/DELETE /api/clientes/{id}` |
+| Locales | `GET/POST /api/locales`, `GET/PUT/DELETE /api/locales/{id}` |
+| Trasteros | `GET/POST /api/trasteros`, `GET/PUT/DELETE /api/trasteros/{id}` |
+| Contratos | `GET/POST /api/contratos`, `GET/PUT/DELETE /api/contratos/{id}`, `PATCH .../finalizar`, `PATCH .../cancelar` |
+| Ingresos | `GET/POST /api/ingresos`, `GET/PUT/DELETE /api/ingresos/{id}` |
+| Gastos | `GET/POST /api/gastos`, `GET/PUT/DELETE /api/gastos/{id}` |
+| Prestamos | `GET/POST /api/prestamos`, `GET/PUT/DELETE /api/prestamos/{id}` |
+| Direcciones | `GET/POST /api/direcciones`, `GET/PUT/DELETE /api/direcciones/{id}` |
+| Dashboard | `GET /api/dashboard/stats`, `GET /api/dashboard/rentabilidad` |
+
+### Error Codes
+
+| HTTP | Code Pattern | Description |
+|------|--------------|-------------|
+| 400 | `VALIDATION_ERROR` | Invalid field value. Details object contains field names with error messages |
+| 401 | `INVALID_CREDENTIALS` | Wrong email/password |
+| 403 | `USER_INACTIVE` | User account is disabled |
+| 404 | `{ENTITY}_NOT_FOUND` | Resource not found (e.g., `CLIENTE_NOT_FOUND`, `TRASTERO_NOT_FOUND`) |
+| 409 | `{ENTITY}_ALREADY_EXISTS` or `VALIDATION_ERROR` | Duplicate resource or field conflict |
+
+### Main Entities
+
+- **User**: id (uuid), nombre, email, rol (admin/gestor/readonly), activo
+- **Cliente**: id, nombre, apellidos, dniNie, email, telefono, activo
+- **Local**: id, nombre, direccionId, superficieTotal, numeroTrasteros, fechaCompra, precioCompra, referenciaCatastral
+- **Trastero**: id, localId, numero, nombre, superficie, precioMensual, estado (disponible/ocupado/reservado/mantenimiento)
+- **Contrato**: id, trasteroId, clienteId, fechaInicio, fechaFin, precioMensual, fianza, fianzaPagada, estado (activo/finalizado/cancelado)
+- **Ingreso**: id, contratoId, concepto, importe, fechaPago, categoria (alquiler/fianza/otros), metodoPago
+- **Gasto**: id, localId, concepto, importe, fecha, categoria (suministros/mantenimiento/seguros/impuestos/comunidad/otros), metodoPago
+- **Prestamo**: id, localId, capitalSolicitado, totalADevolver, fechaConcesion, entidadBancaria, tipoInteres, estado (activo/pagado/cancelado)
+- **Direccion**: id, tipoVia, nombreVia, numero, piso, puerta, codigoPostal, ciudad, provincia, pais, latitud, longitud

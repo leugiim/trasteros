@@ -17,24 +17,64 @@ nelmio_api_doc:
             schemas:
                 Error:
                     type: object
+                    description: 'Formato genérico de error de la API'
+                    properties:
+                        error:
+                            type: object
+                            required:
+                                - message
+                                - code
+                            properties:
+                                message:
+                                    type: string
+                                    description: 'Mensaje descriptivo del error'
+                                    example: 'Error description'
+                                code:
+                                    type: string
+                                    description: 'Código único del error para identificación programática'
+                                    example: 'ERROR_CODE'
+                                details:
+                                    type: object
+                                    nullable: true
+                                    description: 'Detalles adicionales del error (opcional)'
+                NotFoundError:
+                    type: object
+                    description: 'Error cuando un recurso no existe. Código sigue el patrón {ENTIDAD}_NOT_FOUND'
                     properties:
                         error:
                             type: object
                             properties:
                                 message:
                                     type: string
-                                    example: 'Error description'
+                                    example: 'Cliente with id 123 not found'
                                 code:
                                     type: string
-                                    example: 'ERROR_CODE'
-                                details:
-                                    type: object
-                                    nullable: true
-                ValidationError:
+                                    description: 'Códigos posibles: CLIENTE_NOT_FOUND, USER_NOT_FOUND, TRASTERO_NOT_FOUND, CONTRATO_NOT_FOUND, LOCAL_NOT_FOUND, DIRECCION_NOT_FOUND, GASTO_NOT_FOUND, INGRESO_NOT_FOUND, PRESTAMO_NOT_FOUND'
+                                    example: 'CLIENTE_NOT_FOUND'
+                ConflictError:
                     type: object
+                    description: 'Error cuando existe un conflicto (recurso duplicado). Código sigue el patrón {ENTIDAD}_ALREADY_EXISTS o VALIDATION_ERROR para duplicados de campos'
                     properties:
                         error:
                             type: object
+                            properties:
+                                message:
+                                    type: string
+                                    example: 'Email already exists'
+                                code:
+                                    type: string
+                                    description: 'Códigos posibles: USER_ALREADY_EXISTS, TRASTERO_ALREADY_EXISTS, VALIDATION_ERROR (para campos duplicados como email, dniNie)'
+                                    example: 'VALIDATION_ERROR'
+                ValidationError:
+                    type: object
+                    description: 'Error de validación de campos. El objeto details contiene los campos inválidos con sus mensajes de error'
+                    properties:
+                        error:
+                            type: object
+                            required:
+                                - message
+                                - code
+                                - details
                             properties:
                                 message:
                                     type: string
@@ -44,10 +84,39 @@ nelmio_api_doc:
                                     example: 'VALIDATION_ERROR'
                                 details:
                                     type: object
+                                    description: 'Campos inválidos. Claves posibles: dniNie, email, telefono, codigoPostal, coordenadas, superficie, precioMensual, trasteroEstado, importe, gastoCategoria, ingresoCategoria, metodoPago, fianza, contratoDate, referenciaCatastral, capitalSolicitado, totalADevolver, tipoInteres, prestamoEstado'
                                     additionalProperties:
                                         type: array
                                         items:
                                             type: string
+                                    example:
+                                        dniNie: ['El DNI/NIE no es válido']
+                AuthenticationError:
+                    type: object
+                    description: 'Error de autenticación (credenciales inválidas)'
+                    properties:
+                        error:
+                            type: object
+                            properties:
+                                message:
+                                    type: string
+                                    example: 'Invalid credentials'
+                                code:
+                                    type: string
+                                    example: 'INVALID_CREDENTIALS'
+                ForbiddenError:
+                    type: object
+                    description: 'Error de acceso denegado (usuario inactivo o sin permisos)'
+                    properties:
+                        error:
+                            type: object
+                            properties:
+                                message:
+                                    type: string
+                                    example: 'User is inactive'
+                                code:
+                                    type: string
+                                    example: 'USER_INACTIVE'
                 PaginatedMeta:
                     type: object
                     properties:
