@@ -1,0 +1,55 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "API: Symfony Server",
+            "type": "shell",
+            "command": "cd api && symfony server:start",
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "dev"
+            },
+            "options": {
+                "statusbar": {
+                    "hide": true,
+                    "color": "#F97316"
+                }
+            }
+        },
+        {
+            "label": "App: Next.js Dev",
+            "type": "shell",
+            "command": "cd app && pnpm dev",
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "dev"
+            },
+            "options": {
+                "statusbar": {
+                    "hide": true,
+                    "color": "#EAB308"
+                }
+            }
+        },
+        {
+            "label": "$(play) Dev: Start All",
+            "dependsOn": [
+                "API: Symfony Server",
+                "App: Next.js Dev"
+            ],
+            "dependsOrder": "parallel",
+            "problemMatcher": [],
+            "options": {
+                "statusbar": {
+                    "color": "#22C55E"
+                }
+            }
+        }
+    ]
+}
