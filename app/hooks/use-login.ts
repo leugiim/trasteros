@@ -1,12 +1,10 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { apiFetch, ApiError } from "@/lib/api/client"
-import type { components } from "@/lib/api/types"
-
-type LoginResponse = components["schemas"]["LoginResponse"]
+import { useUser } from "@/lib/stores/user-store"
 
 export function useLogin() {
   const router = useRouter()
+  const { setUser } = useUser()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -15,24 +13,28 @@ export function useLogin() {
     setLoading(true)
 
     try {
-      const data = await apiFetch<LoginResponse>("/api/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       })
 
-      document.cookie = `token=${data.token}; path=/; SameSite=Lax`
+      const data = await res.json()
 
-      router.push("/dashboard")
-    } catch (err) {
-      if (err instanceof ApiError) {
+      if (!res.ok) {
         const messages: Record<string, string> = {
           INVALID_CREDENTIALS: "Correo electrónico o contraseña incorrectos",
           USER_INACTIVE: "Tu cuenta está desactivada",
         }
-        setError(messages[err.code] ?? err.message)
-      } else {
-        setError("No se pudo conectar con el servidor")
+        const code = data.error?.code ?? ""
+        setError(messages[code] ?? data.error?.message ?? "Error desconocido")
+        return
       }
+
+      setUser(data.user)
+      router.push("/dashboard")
+    } catch {
+      setError("No se pudo conectar con el servidor")
     } finally {
       setLoading(false)
     }
