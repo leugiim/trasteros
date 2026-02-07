@@ -19,7 +19,8 @@ final readonly class DashboardStatsResponse
         public float $gastosMes,
         public float $balanceMes,
         public int $contratosProximosVencer,
-        public int $fianzasPendientes
+        public int $fianzasPendientes,
+        public float $prestamosPendienteTotal
     ) {
     }
 
@@ -46,6 +47,9 @@ final readonly class DashboardStatsResponse
                 'ingresosMes' => $this->ingresosMes,
                 'gastosMes' => $this->gastosMes,
                 'balanceMes' => $this->balanceMes,
+            ],
+            'prestamos' => [
+                'pendienteTotal' => $this->prestamosPendienteTotal,
             ],
         ];
     }

@@ -104,4 +104,17 @@ final class DoctrinePrestamoRepository extends ServiceEntityRepository implement
     {
         return parent::count($criteria);
     }
+
+    public function getTotalADevolverByEstado(string $estado): float
+    {
+        $result = $this->createQueryBuilder('p')
+            ->select('SUM(p.totalADevolver)')
+            ->where('p.estado = :estado')
+            ->andWhere('p.deletedAt IS NULL')
+            ->setParameter('estado', $estado)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (float) ($result ?? 0);
+    }
 }

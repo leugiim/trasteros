@@ -41,4 +41,6 @@ interface PrestamoRepositoryInterface
     public function findByEntidadBancaria(string $entidadBancaria): array;
 
     public function count(): int;
+
+    public function getTotalADevolverByEstado(string $estado): float;
 }

@@ -272,4 +272,52 @@ final class DoctrineIngresoRepository extends ServiceEntityRepository implements
 
         return $result !== null ? (float) $result : 0.0;
     }
+
+    /**
+     * @return array<array{date: string, total: float}>
+     */
+    public function getImportesGroupedByDay(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): array
+    {
+        $results = $this->createQueryBuilder('i')
+            ->select('SUBSTRING(i.fechaPago, 1, 10) as date, SUM(i.importe) as total')
+            ->where('i.fechaPago BETWEEN :desde AND :hasta')
+            ->andWhere('i.deletedAt IS NULL')
+            ->setParameter('desde', $desde)
+            ->setParameter('hasta', $hasta)
+            ->groupBy('date')
+            ->orderBy('date', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(function ($row) {
+            return [
+                'date' => $row['date'],
+                'total' => (float) $row['total']
+            ];
+        }, $results);
+    }
+
+    /**
+     * @return array<array{date: string, total: float}>
+     */
+    public function getImportesGroupedByMonth(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): array
+    {
+        $results = $this->createQueryBuilder('i')
+            ->select('SUBSTRING(i.fechaPago, 1, 7) as date, SUM(i.importe) as total')
+            ->where('i.fechaPago BETWEEN :desde AND :hasta')
+            ->andWhere('i.deletedAt IS NULL')
+            ->setParameter('desde', $desde)
+            ->setParameter('hasta', $hasta)
+            ->groupBy('date')
+            ->orderBy('date', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(function ($row) {
+            return [
+                'date' => $row['date'],
+                'total' => (float) $row['total']
+            ];
+        }, $results);
+    }
 }

@@ -1191,6 +1191,41 @@
                 }
             }
         },
+        "/api/dashboard/chart": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Datos del gráfico de ingresos y gastos",
+                "description": "Obtiene los ingresos y gastos agrupados por período para visualización en gráficos",
+                "operationId": "get_dashboard_chart",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Período de datos a obtener",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["1m", "3m", "6m", "1y"],
+                            "default": "1m"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Datos del gráfico",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DashboardChart"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/direcciones": {
             "get": {
                 "tags": [
@@ -4625,6 +4660,47 @@
                             }
                         },
                         "type": "object"
+                    },
+                    "prestamos": {
+                        "properties": {
+                            "pendienteTotal": {
+                                "type": "number",
+                                "format": "float"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "DashboardChart": {
+                "properties": {
+                    "period": {
+                        "type": "string",
+                        "enum": ["1m", "3m", "6m", "1y"],
+                        "description": "Período de datos mostrado"
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "date": {
+                                    "type": "string",
+                                    "description": "Fecha en formato YYYY-MM-DD (día) o YYYY-MM (mes)"
+                                },
+                                "ingresos": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "description": "Total de ingresos para este período"
+                                },
+                                "gastos": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "description": "Total de gastos para este período"
+                                }
+                            },
+                            "type": "object"
+                        }
                     }
                 },
                 "type": "object"

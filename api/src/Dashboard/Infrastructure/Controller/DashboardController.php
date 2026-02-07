@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Dashboard\Infrastructure\Controller;
 
 use App\Auth\Infrastructure\Attribute\Auth;
+use App\Dashboard\Application\DTO\DashboardChartResponse;
 use App\Dashboard\Application\DTO\DashboardStatsResponse;
 use App\Dashboard\Application\DTO\RentabilidadResponse;
+use App\Dashboard\Application\Query\GetDashboardChart\GetDashboardChartQuery;
 use App\Dashboard\Application\Query\GetDashboardStats\GetDashboardStatsQuery;
 use App\Dashboard\Application\Query\GetRentabilidad\GetRentabilidadQuery;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Routing\Attribute\Route;
@@ -99,5 +102,39 @@ final class DashboardController extends AbstractController
         $rentabilidad = $handledStamp->getResult();
 
         return $this->json($rentabilidad->toArray());
+    }
+
+    #[Route('/chart', name: 'dashboard_chart', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Datos del gráfico de ingresos y gastos',
+        description: 'Obtiene los ingresos y gastos agrupados por período para visualización en gráficos'
+    )]
+    #[OA\Parameter(
+        name: 'period',
+        description: 'Período de datos a obtener',
+        in: 'query',
+        required: false,
+        schema: new OA\Schema(
+            type: 'string',
+            enum: ['1m', '3m', '6m', '1y'],
+            default: '1m'
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Datos del gráfico',
+        content: new OA\JsonContent(ref: '#/components/schemas/DashboardChart')
+    )]
+    public function chart(Request $request): JsonResponse
+    {
+        $period = $request->query->get('period', '1m');
+
+        $envelope = $this->queryBus->dispatch(new GetDashboardChartQuery($period));
+        $handledStamp = $envelope->last(HandledStamp::class);
+
+        /** @var DashboardChartResponse $chartData */
+        $chartData = $handledStamp->getResult();
+
+        return $this->json($chartData->toArray());
     }
 }

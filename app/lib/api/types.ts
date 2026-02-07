@@ -308,6 +308,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dashboard/chart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Datos del gráfico de ingresos y gastos
+         * @description Obtiene los ingresos y gastos agrupados por período para visualización en gráficos
+         */
+        get: operations["get_dashboard_chart"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/direcciones": {
         parameters: {
             query?: never;
@@ -1155,6 +1175,31 @@ export interface components {
                 /** Format: float */
                 balanceMes?: number;
             };
+            prestamos?: {
+                /** Format: float */
+                pendienteTotal?: number;
+            };
+        };
+        DashboardChart: {
+            /**
+             * @description Período de datos mostrado
+             * @enum {string}
+             */
+            period?: "1m" | "3m" | "6m" | "1y";
+            data?: {
+                /** @description Fecha en formato YYYY-MM-DD (día) o YYYY-MM (mes) */
+                date?: string;
+                /**
+                 * Format: float
+                 * @description Total de ingresos para este período
+                 */
+                ingresos?: number;
+                /**
+                 * Format: float
+                 * @description Total de gastos para este período
+                 */
+                gastos?: number;
+            }[];
         };
         Rentabilidad: {
             localId?: number;
@@ -2160,6 +2205,29 @@ export interface operations {
                             };
                         }[];
                     };
+                };
+            };
+        };
+    };
+    get_dashboard_chart: {
+        parameters: {
+            query?: {
+                /** @description Período de datos a obtener */
+                period?: "1m" | "3m" | "6m" | "1y";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Datos del gráfico */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardChart"];
                 };
             };
         };

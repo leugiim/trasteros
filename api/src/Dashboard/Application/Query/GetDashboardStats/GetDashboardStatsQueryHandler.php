@@ -11,6 +11,8 @@ use App\Dashboard\Application\DTO\DashboardStatsResponse;
 use App\Gasto\Domain\Repository\GastoRepositoryInterface;
 use App\Ingreso\Domain\Repository\IngresoRepositoryInterface;
 use App\Local\Domain\Repository\LocalRepositoryInterface;
+use App\Prestamo\Domain\Model\PrestamoEstado;
+use App\Prestamo\Domain\Repository\PrestamoRepositoryInterface;
 use App\Trastero\Domain\Repository\TrasteroRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -23,7 +25,8 @@ final readonly class GetDashboardStatsQueryHandler
         private ClienteRepositoryInterface $clienteRepository,
         private LocalRepositoryInterface $localRepository,
         private IngresoRepositoryInterface $ingresoRepository,
-        private GastoRepositoryInterface $gastoRepository
+        private GastoRepositoryInterface $gastoRepository,
+        private PrestamoRepositoryInterface $prestamoRepository
     ) {
     }
 
@@ -56,6 +59,9 @@ final readonly class GetDashboardStatsQueryHandler
         // Fianzas pendientes
         $fianzasPendientes = count($this->contratoRepository->findConFianzaPendiente());
 
+        // Préstamos pendientes
+        $prestamosPendienteTotal = $this->prestamoRepository->getTotalADevolverByEstado(PrestamoEstado::ACTIVO->value);
+
         return new DashboardStatsResponse(
             totalTrasteros: $totalTrasteros,
             trasterosDisponibles: $trasterosDisponibles,
@@ -69,7 +75,8 @@ final readonly class GetDashboardStatsQueryHandler
             gastosMes: $gastosMes,
             balanceMes: $ingresosMes - $gastosMes,
             contratosProximosVencer: $contratosProximosVencer,
-            fianzasPendientes: $fianzasPendientes
+            fianzasPendientes: $fianzasPendientes,
+            prestamosPendienteTotal: $prestamosPendienteTotal
         );
     }
 }

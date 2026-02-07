@@ -68,4 +68,16 @@ interface GastoRepositoryInterface
     public function count(array $criteria = []): int;
 
     public function getTotalImporteByDateRange(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): float;
+
+    /**
+     * Get expense amounts grouped by day
+     * @return array<array{date: string, total: float}> Array of ['date' => 'YYYY-MM-DD', 'total' => float]
+     */
+    public function getImportesGroupedByDay(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): array;
+
+    /**
+     * Get expense amounts grouped by month
+     * @return array<array{date: string, total: float}> Array of ['date' => 'YYYY-MM', 'total' => float]
+     */
+    public function getImportesGroupedByMonth(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): array;
 }
