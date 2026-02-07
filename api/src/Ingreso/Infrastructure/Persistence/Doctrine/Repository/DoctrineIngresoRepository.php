@@ -9,6 +9,7 @@ use App\Ingreso\Domain\Model\IngresoCategoria;
 use App\Ingreso\Domain\Model\IngresoId;
 use App\Ingreso\Domain\Repository\IngresoRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -95,8 +96,8 @@ final class DoctrineIngresoRepository extends ServiceEntityRepository implements
         return $this->createQueryBuilder('i')
             ->where('i.fechaPago BETWEEN :desde AND :hasta')
             ->andWhere('i.deletedAt IS NULL')
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->orderBy('i.fechaPago', 'DESC')
             ->getQuery()
             ->getResult();
@@ -116,8 +117,8 @@ final class DoctrineIngresoRepository extends ServiceEntityRepository implements
             ->andWhere('i.fechaPago BETWEEN :desde AND :hasta')
             ->andWhere('i.deletedAt IS NULL')
             ->setParameter('contratoId', $contratoId)
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->orderBy('i.fechaPago', 'DESC')
             ->getQuery()
             ->getResult();
@@ -182,8 +183,8 @@ final class DoctrineIngresoRepository extends ServiceEntityRepository implements
             ->andWhere('i.fechaPago BETWEEN :desde AND :hasta')
             ->andWhere('i.deletedAt IS NULL')
             ->setParameter('contratoId', $contratoId)
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -265,8 +266,8 @@ final class DoctrineIngresoRepository extends ServiceEntityRepository implements
             ->select('SUM(i.importe) as total')
             ->where('i.fechaPago BETWEEN :desde AND :hasta')
             ->andWhere('i.deletedAt IS NULL')
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -282,8 +283,8 @@ final class DoctrineIngresoRepository extends ServiceEntityRepository implements
             ->select('SUBSTRING(i.fechaPago, 1, 10) as date, SUM(i.importe) as total')
             ->where('i.fechaPago BETWEEN :desde AND :hasta')
             ->andWhere('i.deletedAt IS NULL')
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->groupBy('date')
             ->orderBy('date', 'ASC')
             ->getQuery()
@@ -306,8 +307,8 @@ final class DoctrineIngresoRepository extends ServiceEntityRepository implements
             ->select('SUBSTRING(i.fechaPago, 1, 7) as date, SUM(i.importe) as total')
             ->where('i.fechaPago BETWEEN :desde AND :hasta')
             ->andWhere('i.deletedAt IS NULL')
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->groupBy('date')
             ->orderBy('date', 'ASC')
             ->getQuery()

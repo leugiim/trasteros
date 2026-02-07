@@ -9,6 +9,7 @@ use App\Gasto\Domain\Model\GastoCategoria;
 use App\Gasto\Domain\Model\GastoId;
 use App\Gasto\Domain\Repository\GastoRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -95,8 +96,8 @@ final class DoctrineGastoRepository extends ServiceEntityRepository implements G
         return $this->createQueryBuilder('g')
             ->where('g.fecha BETWEEN :desde AND :hasta')
             ->andWhere('g.deletedAt IS NULL')
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->orderBy('g.fecha', 'DESC')
             ->getQuery()
             ->getResult();
@@ -116,8 +117,8 @@ final class DoctrineGastoRepository extends ServiceEntityRepository implements G
             ->andWhere('g.fecha BETWEEN :desde AND :hasta')
             ->andWhere('g.deletedAt IS NULL')
             ->setParameter('localId', $localId)
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->orderBy('g.fecha', 'DESC')
             ->getQuery()
             ->getResult();
@@ -182,8 +183,8 @@ final class DoctrineGastoRepository extends ServiceEntityRepository implements G
             ->andWhere('g.fecha BETWEEN :desde AND :hasta')
             ->andWhere('g.deletedAt IS NULL')
             ->setParameter('localId', $localId)
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -201,8 +202,8 @@ final class DoctrineGastoRepository extends ServiceEntityRepository implements G
             ->select('SUM(g.importe) as total')
             ->where('g.fecha BETWEEN :desde AND :hasta')
             ->andWhere('g.deletedAt IS NULL')
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -218,8 +219,8 @@ final class DoctrineGastoRepository extends ServiceEntityRepository implements G
             ->select('SUBSTRING(g.fecha, 1, 10) as date, SUM(g.importe) as total')
             ->where('g.fecha BETWEEN :desde AND :hasta')
             ->andWhere('g.deletedAt IS NULL')
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->groupBy('date')
             ->orderBy('date', 'ASC')
             ->getQuery()
@@ -242,8 +243,8 @@ final class DoctrineGastoRepository extends ServiceEntityRepository implements G
             ->select('SUBSTRING(g.fecha, 1, 7) as date, SUM(g.importe) as total')
             ->where('g.fecha BETWEEN :desde AND :hasta')
             ->andWhere('g.deletedAt IS NULL')
-            ->setParameter('desde', $desde)
-            ->setParameter('hasta', $hasta)
+            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
+            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
             ->groupBy('date')
             ->orderBy('date', 'ASC')
             ->getQuery()
