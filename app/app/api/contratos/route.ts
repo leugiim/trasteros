@@ -3,33 +3,6 @@ import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 import { API_URL, sessionOptions, type SessionData } from "@/lib/auth/session"
 
-export async function GET(request: Request) {
-  const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
-
-  if (!session.token) {
-    return NextResponse.json(
-      { error: { message: "No autenticado", code: "NOT_AUTHENTICATED" } },
-      { status: 401 }
-    )
-  }
-
-  const { searchParams } = new URL(request.url)
-  const query = searchParams.toString()
-  const url = `${API_URL}/api/clientes${query ? `?${query}` : ""}`
-
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${session.token}` },
-  })
-
-  const data = await res.json()
-
-  if (!res.ok) {
-    return NextResponse.json(data, { status: res.status })
-  }
-
-  return NextResponse.json(data)
-}
-
 export async function POST(request: Request) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
 
@@ -42,7 +15,7 @@ export async function POST(request: Request) {
 
   const body = await request.json()
 
-  const res = await fetch(`${API_URL}/api/clientes`, {
+  const res = await fetch(`${API_URL}/api/contratos`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${session.token}`,
@@ -51,7 +24,16 @@ export async function POST(request: Request) {
     body: JSON.stringify(body),
   })
 
-  const data = await res.json()
+  const text = await res.text()
+  let data: unknown
+  try {
+    data = JSON.parse(text)
+  } catch {
+    return NextResponse.json(
+      { error: { message: `Error del servidor (${res.status})`, code: "SERVER_ERROR" } },
+      { status: 502 }
+    )
+  }
 
   if (!res.ok) {
     return NextResponse.json(data, { status: res.status })

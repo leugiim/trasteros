@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Mail, Phone, IdCard, Calendar } from "lucide-react"
+import { ArrowLeft, Mail, Phone, IdCard, Calendar, Plus } from "lucide-react"
 import type { components } from "@/lib/api/types"
+import { ContratoFormModal } from "@/components/contrato-form-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -62,8 +63,10 @@ export default function ClienteDetailPage() {
   const [contratos, setContratos] = useState<ContratoWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [contratoModalOpen, setContratoModalOpen] = useState(false)
 
-  useEffect(() => {
+  const fetchData = () => {
+    setLoading(true)
     Promise.all([
       fetch(`/api/clientes/${id}`).then((res) => {
         if (!res.ok) throw new Error("Cliente no encontrado")
@@ -79,6 +82,10 @@ export default function ClienteDetailPage() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchData()
   }, [id])
 
   if (loading) {
@@ -130,7 +137,7 @@ export default function ClienteDetailPage() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-lg">
             Contratos
             {contratos.length > 0 && (
@@ -139,7 +146,18 @@ export default function ClienteDetailPage() {
               </Badge>
             )}
           </CardTitle>
+          <Button size="sm" onClick={() => setContratoModalOpen(true)}>
+            <Plus className="size-4" />
+            Crear contrato
+          </Button>
         </CardHeader>
+
+        <ContratoFormModal
+          open={contratoModalOpen}
+          onOpenChange={setContratoModalOpen}
+          clienteId={cliente.id!}
+          onSuccess={fetchData}
+        />
         <div className="px-6 pb-6">
           {contratos.length === 0 ? (
             <p className="text-muted-foreground py-4 text-center text-sm">

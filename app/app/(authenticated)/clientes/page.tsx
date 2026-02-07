@@ -11,10 +11,11 @@ import {
   type SortingState,
 } from "@tanstack/react-table"
 import { useState } from "react"
-import { ArrowUpDown, Eye, Search } from "lucide-react"
+import { ArrowUpDown, Eye, Plus, Search } from "lucide-react"
 import Link from "next/link"
 import type { components } from "@/lib/api/types"
 import { useClientes } from "@/hooks/use-clientes"
+import { ClienteFormModal } from "@/components/cliente-form-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -113,9 +114,10 @@ function TableSkeleton() {
 }
 
 export default function ClientesPage() {
-  const { clientes, total, loading, error } = useClientes()
+  const { clientes, total, loading, error, refetch } = useClientes()
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
+  const [modalOpen, setModalOpen] = useState(false)
 
   const table = useReactTable({
     data: clientes,
@@ -147,7 +149,17 @@ export default function ClientesPage() {
             {total} clientes
           </span>
         </div>
+        <Button onClick={() => setModalOpen(true)}>
+          <Plus className="size-4" />
+          Crear cliente
+        </Button>
       </div>
+
+      <ClienteFormModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSuccess={refetch}
+      />
 
       <div className="px-4 lg:px-6">
         {error && (
