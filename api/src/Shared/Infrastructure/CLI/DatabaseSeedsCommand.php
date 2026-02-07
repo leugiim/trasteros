@@ -249,8 +249,7 @@ final class DatabaseSeedsCommand extends Command
                     precioMensual: 85.0,
                     fechaFin: null,
                     fianza: 170.0,
-                    fianzaPagada: true,
-                    estado: 'activo'
+                    fianzaPagada: true
                 ),
                 new CreateContratoCommand(
                     trasteroId: $trasteroIds[1],
@@ -259,8 +258,7 @@ final class DatabaseSeedsCommand extends Command
                     precioMensual: 120.0,
                     fechaFin: null,
                     fianza: 240.0,
-                    fianzaPagada: true,
-                    estado: 'activo'
+                    fianzaPagada: true
                 ),
             ];
 

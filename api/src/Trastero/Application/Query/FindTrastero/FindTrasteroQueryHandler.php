@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Trastero\Application\Query\FindTrastero;
 
+use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
 use App\Trastero\Application\DTO\TrasteroResponse;
 use App\Trastero\Domain\Exception\TrasteroNotFoundException;
 use App\Trastero\Domain\Model\TrasteroId;
@@ -14,7 +15,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class FindTrasteroQueryHandler
 {
     public function __construct(
-        private TrasteroRepositoryInterface $trasteroRepository
+        private TrasteroRepositoryInterface $trasteroRepository,
+        private ContratoRepositoryInterface $contratoRepository
     ) {
     }
 
@@ -25,6 +27,8 @@ final readonly class FindTrasteroQueryHandler
             throw TrasteroNotFoundException::withId($query->id);
         }
 
-        return TrasteroResponse::fromTrastero($trastero);
+        $contratos = $this->contratoRepository->findByTrasteroId($query->id);
+
+        return TrasteroResponse::fromTrasteroWithContratos($trastero, $contratos);
     }
 }

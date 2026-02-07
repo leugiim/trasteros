@@ -13,8 +13,7 @@ final readonly class CreateContratoCommand
         public float $precioMensual,
         public ?string $fechaFin = null,
         public ?float $fianza = null,
-        public bool $fianzaPagada = false,
-        public string $estado = 'activo'
+        public bool $fianzaPagada = false
     ) {
     }
 }

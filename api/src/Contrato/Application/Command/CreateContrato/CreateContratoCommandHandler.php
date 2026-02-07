@@ -12,7 +12,6 @@ use App\Contrato\Domain\Event\ContratoCreated;
 use App\Contrato\Domain\Exception\InvalidContratoDateException;
 use App\Contrato\Domain\Exception\TrasteroAlreadyRentedException;
 use App\Contrato\Domain\Model\Contrato;
-use App\Contrato\Domain\Model\ContratoEstado;
 use App\Contrato\Domain\Model\Fianza;
 use App\Contrato\Domain\Model\PrecioMensual;
 use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
@@ -47,10 +46,6 @@ final readonly class CreateContratoCommandHandler
             throw ClienteNotFoundException::withId($command->clienteId);
         }
 
-        if ($this->contratoRepository->hasContratoActivoTrastero($trasteroId->value)) {
-            throw new TrasteroAlreadyRentedException($command->trasteroId);
-        }
-
         $fechaInicio = new \DateTimeImmutable($command->fechaInicio);
         $fechaFin = $command->fechaFin !== null ? new \DateTimeImmutable($command->fechaFin) : null;
 
@@ -58,9 +53,18 @@ final readonly class CreateContratoCommandHandler
             throw new InvalidContratoDateException('La fecha de fin debe ser posterior a la fecha de inicio');
         }
 
+        $solapados = $this->contratoRepository->findContratosSolapados(
+            $trasteroId->value,
+            $fechaInicio,
+            $fechaFin
+        );
+
+        if (count($solapados) > 0) {
+            throw new TrasteroAlreadyRentedException($command->trasteroId);
+        }
+
         $precioMensual = PrecioMensual::fromFloat($command->precioMensual);
         $fianza = $command->fianza !== null ? Fianza::fromFloat($command->fianza) : null;
-        $estado = ContratoEstado::fromString($command->estado);
 
         $contrato = Contrato::create(
             trastero: $trastero,
@@ -69,8 +73,7 @@ final readonly class CreateContratoCommandHandler
             precioMensual: $precioMensual,
             fechaFin: $fechaFin,
             fianza: $fianza,
-            fianzaPagada: $command->fianzaPagada,
-            estado: $estado
+            fianzaPagada: $command->fianzaPagada
         );
 
         $this->contratoRepository->save($contrato);

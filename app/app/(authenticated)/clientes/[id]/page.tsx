@@ -37,8 +37,9 @@ interface ContratoWithRelations {
   updatedAt?: string
 }
 
-const estadoVariant: Record<string, "default" | "secondary" | "destructive"> = {
+const estadoVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   activo: "default",
+  pendiente: "outline",
   finalizado: "secondary",
   cancelado: "destructive",
 }

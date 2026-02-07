@@ -321,7 +321,7 @@ nelmio_api_doc:
                             type: boolean
                         estado:
                             type: string
-                            enum: [activo, finalizado, cancelado]
+                            enum: [activo, pendiente, finalizado, cancelado]
                         createdAt:
                             type: string
                             format: date-time

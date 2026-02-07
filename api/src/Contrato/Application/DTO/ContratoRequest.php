@@ -33,13 +33,7 @@ final readonly class ContratoRequest
         public ?float $fianza = null,
 
         #[Assert\Type(type: 'bool', message: 'El campo fianzaPagada debe ser booleano')]
-        public bool $fianzaPagada = false,
-
-        #[Assert\Choice(
-            choices: ['activo', 'finalizado', 'cancelado', 'pendiente'],
-            message: 'El estado debe ser uno de: activo, finalizado, cancelado, pendiente'
-        )]
-        public string $estado = 'activo'
+        public bool $fianzaPagada = false
     ) {
     }
 }

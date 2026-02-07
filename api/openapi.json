@@ -440,6 +440,7 @@
                             "type": "string",
                             "enum": [
                                 "activo",
+                                "pendiente",
                                 "finalizado",
                                 "cancelado"
                             ]
@@ -520,15 +521,6 @@
                                     "fianzaPagada": {
                                         "type": "boolean",
                                         "default": false
-                                    },
-                                    "estado": {
-                                        "type": "string",
-                                        "default": "activo",
-                                        "enum": [
-                                            "activo",
-                                            "finalizado",
-                                            "cancelado"
-                                        ]
                                     }
                                 },
                                 "type": "object"
@@ -568,7 +560,7 @@
                         }
                     },
                     "409": {
-                        "description": "Trastero ya alquilado",
+                        "description": "Trastero ya alquilado o solapamiento de fechas",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -680,14 +672,6 @@
                                     },
                                     "fianzaPagada": {
                                         "type": "boolean"
-                                    },
-                                    "estado": {
-                                        "type": "string",
-                                        "enum": [
-                                            "activo",
-                                            "finalizado",
-                                            "cancelado"
-                                        ]
                                     }
                                 },
                                 "type": "object"
@@ -727,7 +711,7 @@
                         }
                     },
                     "409": {
-                        "description": "Trastero ya alquilado",
+                        "description": "Trastero ya alquilado o solapamiento de fechas",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -885,8 +869,8 @@
                 "tags": [
                     "Contratos"
                 ],
-                "summary": "Finalizar contrato",
-                "description": "Marca un contrato como finalizado",
+                "summary": "Finalizar contrato anticipadamente",
+                "description": "Finaliza un contrato anticipadamente estableciendo la fecha de fin a hoy",
                 "operationId": "patch_contratos_finalizar",
                 "parameters": [
                     {
@@ -902,7 +886,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Contrato finalizado",
+                        "description": "Contrato finalizado anticipadamente",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1196,29 +1180,65 @@
                 "tags": [
                     "Dashboard"
                 ],
-                "summary": "Datos del gráfico de ingresos y gastos",
-                "description": "Obtiene los ingresos y gastos agrupados por período para visualización en gráficos",
+                "summary": "Datos del gr\u00e1fico de ingresos y gastos",
+                "description": "Obtiene los ingresos y gastos agrupados por per\u00edodo para visualizaci\u00f3n en gr\u00e1ficos",
                 "operationId": "get_dashboard_chart",
                 "parameters": [
                     {
                         "name": "period",
                         "in": "query",
-                        "description": "Período de datos a obtener",
+                        "description": "Per\u00edodo de datos a obtener",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "enum": ["1m", "3m", "6m", "1y"],
-                            "default": "1m"
+                            "default": "1m",
+                            "enum": [
+                                "1m",
+                                "3m",
+                                "6m",
+                                "1y"
+                            ]
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Datos del gráfico",
+                        "description": "Datos del gr\u00e1fico",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/DashboardChart"
+                                    "properties": {
+                                        "period": {
+                                            "type": "string",
+                                            "enum": [
+                                                "1m",
+                                                "3m",
+                                                "6m",
+                                                "1y"
+                                            ]
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "date": {
+                                                        "description": "Fecha en formato YYYY-MM-DD o YYYY-MM",
+                                                        "type": "string"
+                                                    },
+                                                    "ingresos": {
+                                                        "type": "number",
+                                                        "format": "float"
+                                                    },
+                                                    "gastos": {
+                                                        "type": "number",
+                                                        "format": "float"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
@@ -3616,8 +3636,19 @@
                     "Trasteros"
                 ],
                 "summary": "Trasteros disponibles",
-                "description": "Obtiene todos los trasteros disponibles para alquilar",
+                "description": "Obtiene trasteros disponibles. Con parametro fecha, devuelve los que estaran disponibles en esa fecha.",
                 "operationId": "get_trasteros_disponibles",
+                "parameters": [
+                    {
+                        "name": "fecha",
+                        "in": "query",
+                        "description": "Fecha para verificar disponibilidad (Y-m-d, default: hoy)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Lista de trasteros disponibles",
@@ -3633,6 +3664,84 @@
                                         },
                                         "meta": {
                                             "$ref": "#/components/schemas/PaginatedMeta"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/trasteros/{id}/disponibilidad": {
+            "get": {
+                "tags": [
+                    "Trasteros"
+                ],
+                "summary": "Verificar disponibilidad de trastero",
+                "description": "Verifica si un trastero esta disponible en un rango de fechas",
+                "operationId": "get_trasteros_disponibilidad",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del trastero",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "pattern": "\\d+"
+                        }
+                    },
+                    {
+                        "name": "desde",
+                        "in": "query",
+                        "description": "Fecha inicio (Y-m-d)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "hasta",
+                        "in": "query",
+                        "description": "Fecha fin (Y-m-d, opcional)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estado de disponibilidad",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "disponible": {
+                                            "type": "boolean"
+                                        },
+                                        "conflictos": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "contratoId": {
+                                                        "type": "integer"
+                                                    },
+                                                    "fechaInicio": {
+                                                        "type": "string",
+                                                        "format": "date"
+                                                    },
+                                                    "fechaFin": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "nullable": true
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
                                         }
                                     },
                                     "type": "object"
@@ -4419,6 +4528,7 @@
                         "type": "string",
                         "enum": [
                             "activo",
+                            "pendiente",
                             "finalizado",
                             "cancelado"
                         ]
@@ -4660,47 +4770,6 @@
                             }
                         },
                         "type": "object"
-                    },
-                    "prestamos": {
-                        "properties": {
-                            "pendienteTotal": {
-                                "type": "number",
-                                "format": "float"
-                            }
-                        },
-                        "type": "object"
-                    }
-                },
-                "type": "object"
-            },
-            "DashboardChart": {
-                "properties": {
-                    "period": {
-                        "type": "string",
-                        "enum": ["1m", "3m", "6m", "1y"],
-                        "description": "Período de datos mostrado"
-                    },
-                    "data": {
-                        "type": "array",
-                        "items": {
-                            "properties": {
-                                "date": {
-                                    "type": "string",
-                                    "description": "Fecha en formato YYYY-MM-DD (día) o YYYY-MM (mes)"
-                                },
-                                "ingresos": {
-                                    "type": "number",
-                                    "format": "float",
-                                    "description": "Total de ingresos para este período"
-                                },
-                                "gastos": {
-                                    "type": "number",
-                                    "format": "float",
-                                    "description": "Total de gastos para este período"
-                                }
-                            },
-                            "type": "object"
-                        }
                     }
                 },
                 "type": "object"
@@ -4838,16 +4907,6 @@
                     "fianzaPagada": {
                         "type": "boolean",
                         "default": false
-                    },
-                    "estado": {
-                        "type": "string",
-                        "default": "activo",
-                        "enum": [
-                            "activo",
-                            "finalizado",
-                            "cancelado",
-                            "pendiente"
-                        ]
                     }
                 },
                 "type": "object"

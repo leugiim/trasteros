@@ -39,7 +39,7 @@ final readonly class ContratoResponse
             precioMensual: $contrato->precioMensual()->value,
             fianza: $contrato->fianza()?->value,
             fianzaPagada: $contrato->fianzaPagada(),
-            estado: $contrato->estado()->value,
+            estado: $contrato->estadoCalculado()->value,
             duracionMeses: $contrato->getDuracionMeses(),
             createdAt: $contrato->createdAt()->format('Y-m-d H:i:s'),
             updatedAt: $contrato->updatedAt()->format('Y-m-d H:i:s')

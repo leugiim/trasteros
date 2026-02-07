@@ -64,25 +64,19 @@ final class DoctrineContratoRepository extends ServiceEntityRepository implement
             ->getResult();
     }
 
-    public function findByEstado(ContratoEstado $estado): array
-    {
-        return $this->createQueryBuilder('c')
-            ->where('c.estado = :estado')
-            ->andWhere('c.deletedAt IS NULL')
-            ->setParameter('estado', $estado)
-            ->orderBy('c.fechaInicio', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
-
     public function findContratosActivosByCliente(int $clienteId): array
     {
+        $hoy = new \DateTimeImmutable('today');
+
         return $this->createQueryBuilder('c')
             ->where('c.cliente = :clienteId')
-            ->andWhere('c.estado = :estado')
+            ->andWhere('c.estado != :cancelado')
+            ->andWhere('c.fechaInicio <= :hoy')
+            ->andWhere('c.fechaFin IS NULL OR c.fechaFin >= :hoy')
             ->andWhere('c.deletedAt IS NULL')
             ->setParameter('clienteId', $clienteId)
-            ->setParameter('estado', ContratoEstado::ACTIVO)
+            ->setParameter('cancelado', ContratoEstado::CANCELADO)
+            ->setParameter('hoy', $hoy, 'date_immutable')
             ->orderBy('c.fechaInicio', 'DESC')
             ->getQuery()
             ->getResult();
@@ -90,44 +84,52 @@ final class DoctrineContratoRepository extends ServiceEntityRepository implement
 
     public function findContratosActivosByTrastero(int $trasteroId): array
     {
+        $hoy = new \DateTimeImmutable('today');
+
         return $this->createQueryBuilder('c')
             ->where('c.trastero = :trasteroId')
-            ->andWhere('c.estado = :estado')
+            ->andWhere('c.estado != :cancelado')
+            ->andWhere('c.fechaInicio <= :hoy')
+            ->andWhere('c.fechaFin IS NULL OR c.fechaFin >= :hoy')
             ->andWhere('c.deletedAt IS NULL')
             ->setParameter('trasteroId', $trasteroId)
-            ->setParameter('estado', ContratoEstado::ACTIVO)
+            ->setParameter('cancelado', ContratoEstado::CANCELADO)
+            ->setParameter('hoy', $hoy, 'date_immutable')
             ->orderBy('c.fechaInicio', 'DESC')
             ->getQuery()
             ->getResult();
     }
 
-    public function hasContratoActivoTrastero(int $trasteroId): bool
-    {
-        $count = $this->createQueryBuilder('c')
-            ->select('COUNT(c.id)')
+    public function findContratosSolapados(
+        int $trasteroId,
+        \DateTimeImmutable $inicio,
+        ?\DateTimeImmutable $fin = null,
+        ?int $excludeContratoId = null
+    ): array {
+        $qb = $this->createQueryBuilder('c')
             ->where('c.trastero = :trasteroId')
-            ->andWhere('c.estado = :estado')
+            ->andWhere('c.estado != :cancelado')
             ->andWhere('c.deletedAt IS NULL')
             ->setParameter('trasteroId', $trasteroId)
-            ->setParameter('estado', ContratoEstado::ACTIVO)
-            ->getQuery()
-            ->getSingleScalarResult();
+            ->setParameter('cancelado', ContratoEstado::CANCELADO);
 
-        return $count > 0;
-    }
+        // Overlap: existing.inicio <= new.fin AND (existing.fin IS NULL OR existing.fin >= new.inicio)
+        if ($fin !== null) {
+            $qb->andWhere('c.fechaInicio <= :fin')
+                ->setParameter('fin', $fin, 'date_immutable');
+        }
 
-    public function findOneContratoActivoByTrastero(int $trasteroId): ?Contrato
-    {
-        return $this->createQueryBuilder('c')
-            ->where('c.trastero = :trasteroId')
-            ->andWhere('c.estado = :estado')
-            ->andWhere('c.deletedAt IS NULL')
-            ->setParameter('trasteroId', $trasteroId)
-            ->setParameter('estado', ContratoEstado::ACTIVO)
-            ->orderBy('c.fechaInicio', 'DESC')
-            ->setMaxResults(1)
+        $qb->andWhere('c.fechaFin IS NULL OR c.fechaFin >= :inicio')
+            ->setParameter('inicio', $inicio, 'date_immutable');
+
+        if ($excludeContratoId !== null) {
+            $qb->andWhere('c.id != :excludeId')
+                ->setParameter('excludeId', $excludeContratoId);
+        }
+
+        return $qb->orderBy('c.fechaInicio', 'ASC')
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getResult();
     }
 
     /**
@@ -135,17 +137,19 @@ final class DoctrineContratoRepository extends ServiceEntityRepository implement
      */
     public function findProximosAVencer(int $dias = 30): array
     {
-        $hoy = new \DateTimeImmutable();
+        $hoy = new \DateTimeImmutable('today');
         $limite = $hoy->modify("+{$dias} days");
 
         return $this->createQueryBuilder('c')
-            ->where('c.estado = :estado')
+            ->where('c.estado != :cancelado')
+            ->andWhere('c.fechaInicio <= :hoy')
             ->andWhere('c.fechaFin IS NOT NULL')
-            ->andWhere('c.fechaFin BETWEEN :hoy AND :limite')
+            ->andWhere('c.fechaFin >= :hoy')
+            ->andWhere('c.fechaFin <= :limite')
             ->andWhere('c.deletedAt IS NULL')
-            ->setParameter('estado', ContratoEstado::ACTIVO)
-            ->setParameter('hoy', $hoy)
-            ->setParameter('limite', $limite)
+            ->setParameter('cancelado', ContratoEstado::CANCELADO)
+            ->setParameter('hoy', $hoy, 'date_immutable')
+            ->setParameter('limite', $limite, 'date_immutable')
             ->orderBy('c.fechaFin', 'ASC')
             ->getQuery()
             ->getResult();
@@ -156,11 +160,16 @@ final class DoctrineContratoRepository extends ServiceEntityRepository implement
      */
     public function findConFianzaPendiente(): array
     {
+        $hoy = new \DateTimeImmutable('today');
+
         return $this->createQueryBuilder('c')
-            ->where('c.estado = :estado')
+            ->where('c.estado != :cancelado')
+            ->andWhere('c.fechaInicio <= :hoy')
+            ->andWhere('c.fechaFin IS NULL OR c.fechaFin >= :hoy')
             ->andWhere('c.fianzaPagada = false')
             ->andWhere('c.deletedAt IS NULL')
-            ->setParameter('estado', ContratoEstado::ACTIVO)
+            ->setParameter('cancelado', ContratoEstado::CANCELADO)
+            ->setParameter('hoy', $hoy, 'date_immutable')
             ->orderBy('c.fechaInicio', 'ASC')
             ->getQuery()
             ->getResult();
@@ -172,14 +181,82 @@ final class DoctrineContratoRepository extends ServiceEntityRepository implement
         $this->getEntityManager()->flush();
     }
 
-    public function countByEstado(ContratoEstado $estado): int
+    public function countContratosActivos(): int
     {
+        $hoy = new \DateTimeImmutable('today');
+
         return (int) $this->createQueryBuilder('c')
             ->select('COUNT(c.id)')
-            ->where('c.estado = :estado')
+            ->where('c.estado != :cancelado')
+            ->andWhere('c.fechaInicio <= :hoy')
+            ->andWhere('c.fechaFin IS NULL OR c.fechaFin >= :hoy')
             ->andWhere('c.deletedAt IS NULL')
-            ->setParameter('estado', $estado)
+            ->setParameter('cancelado', ContratoEstado::CANCELADO)
+            ->setParameter('hoy', $hoy, 'date_immutable')
             ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countTrasterosOcupados(): int
+    {
+        $hoy = new \DateTimeImmutable('today');
+
+        return (int) $this->getEntityManager()->createQuery(
+            'SELECT COUNT(DISTINCT IDENTITY(c.trastero))
+             FROM App\Contrato\Domain\Model\Contrato c
+             JOIN c.trastero t
+             WHERE c.estado != :cancelado
+             AND c.fechaInicio <= :hoy
+             AND (c.fechaFin IS NULL OR c.fechaFin >= :hoy)
+             AND c.deletedAt IS NULL
+             AND t.deletedAt IS NULL
+             AND t.estado != :mantenimiento'
+        )
+            ->setParameter('cancelado', ContratoEstado::CANCELADO)
+            ->setParameter('hoy', $hoy, 'date_immutable')
+            ->setParameter('mantenimiento', 'mantenimiento')
+            ->getSingleScalarResult();
+    }
+
+    public function countTrasterosOcupadosByLocal(int $localId): int
+    {
+        $hoy = new \DateTimeImmutable('today');
+
+        return (int) $this->getEntityManager()->createQuery(
+            'SELECT COUNT(DISTINCT IDENTITY(c.trastero))
+             FROM App\Contrato\Domain\Model\Contrato c
+             JOIN c.trastero t
+             JOIN t.local l
+             WHERE c.estado != :cancelado
+             AND c.fechaInicio <= :hoy
+             AND (c.fechaFin IS NULL OR c.fechaFin >= :hoy)
+             AND c.deletedAt IS NULL
+             AND t.deletedAt IS NULL
+             AND l.id = :localId'
+        )
+            ->setParameter('cancelado', ContratoEstado::CANCELADO)
+            ->setParameter('hoy', $hoy, 'date_immutable')
+            ->setParameter('localId', $localId)
+            ->getSingleScalarResult();
+    }
+
+    public function countTrasterosReservados(): int
+    {
+        $hoy = new \DateTimeImmutable('today');
+
+        return (int) $this->getEntityManager()->createQuery(
+            'SELECT COUNT(DISTINCT IDENTITY(c.trastero))
+             FROM App\Contrato\Domain\Model\Contrato c
+             JOIN c.trastero t
+             WHERE c.estado != :cancelado
+             AND c.fechaInicio > :hoy
+             AND c.deletedAt IS NULL
+             AND t.deletedAt IS NULL
+             AND t.estado != :mantenimiento'
+        )
+            ->setParameter('cancelado', ContratoEstado::CANCELADO)
+            ->setParameter('hoy', $hoy, 'date_immutable')
+            ->setParameter('mantenimiento', 'mantenimiento')
             ->getSingleScalarResult();
     }
 

@@ -14,8 +14,7 @@ final readonly class UpdateContratoCommand
         public float $precioMensual,
         public ?string $fechaFin = null,
         public ?float $fianza = null,
-        public bool $fianzaPagada = false,
-        public string $estado = 'activo'
+        public bool $fianzaPagada = false
     ) {
     }
 }

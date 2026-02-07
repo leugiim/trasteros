@@ -103,7 +103,6 @@ export function ContratoFormModal({
       precioMensual: Number(precioMensual),
       fianza: Number(formData.get("fianza")) || null,
       fianzaPagada: false,
-      estado: "activo",
     }
 
     try {

@@ -42,7 +42,7 @@ final class ContratoController extends AbstractController
 
     #[Route('', name: 'contratos_list', methods: ['GET'])]
     #[OA\Get(summary: 'Listar contratos', description: 'Obtiene la lista de todos los contratos')]
-    #[OA\Parameter(name: 'estado', in: 'query', description: 'Filtrar por estado', schema: new OA\Schema(type: 'string', enum: ['activo', 'finalizado', 'cancelado']))]
+    #[OA\Parameter(name: 'estado', in: 'query', description: 'Filtrar por estado', schema: new OA\Schema(type: 'string', enum: ['activo', 'pendiente', 'finalizado', 'cancelado']))]
     #[OA\Response(
         response: 200,
         description: 'Lista de contratos',
@@ -181,15 +181,14 @@ final class ContratoController extends AbstractController
                 new OA\Property(property: 'fechaFin', type: 'string', format: 'date', nullable: true, example: '2024-12-31'),
                 new OA\Property(property: 'precioMensual', type: 'number', format: 'float', example: 50.0),
                 new OA\Property(property: 'fianza', type: 'number', format: 'float', nullable: true, example: 100.0),
-                new OA\Property(property: 'fianzaPagada', type: 'boolean', default: false),
-                new OA\Property(property: 'estado', type: 'string', enum: ['activo', 'finalizado', 'cancelado'], default: 'activo')
+                new OA\Property(property: 'fianzaPagada', type: 'boolean', default: false)
             ]
         )
     )]
     #[OA\Response(response: 201, description: 'Contrato creado', content: new OA\JsonContent(ref: '#/components/schemas/Contrato'))]
     #[OA\Response(response: 400, description: 'Error de validacion', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError'))]
     #[OA\Response(response: 404, description: 'Recurso no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
-    #[OA\Response(response: 409, description: 'Trastero ya alquilado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
+    #[OA\Response(response: 409, description: 'Trastero ya alquilado o solapamiento de fechas', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function create(#[MapRequestPayload] ContratoRequest $request): JsonResponse
     {
         $envelope = $this->commandBus->dispatch(new CreateContratoCommand(
@@ -199,8 +198,7 @@ final class ContratoController extends AbstractController
             precioMensual: $request->precioMensual,
             fechaFin: $request->fechaFin,
             fianza: $request->fianza,
-            fianzaPagada: $request->fianzaPagada,
-            estado: $request->estado
+            fianzaPagada: $request->fianzaPagada
         ));
 
         $handledStamp = $envelope->last(HandledStamp::class);
@@ -225,15 +223,14 @@ final class ContratoController extends AbstractController
                 new OA\Property(property: 'fechaFin', type: 'string', format: 'date', nullable: true),
                 new OA\Property(property: 'precioMensual', type: 'number', format: 'float'),
                 new OA\Property(property: 'fianza', type: 'number', format: 'float', nullable: true),
-                new OA\Property(property: 'fianzaPagada', type: 'boolean'),
-                new OA\Property(property: 'estado', type: 'string', enum: ['activo', 'finalizado', 'cancelado'])
+                new OA\Property(property: 'fianzaPagada', type: 'boolean')
             ]
         )
     )]
     #[OA\Response(response: 200, description: 'Contrato actualizado', content: new OA\JsonContent(ref: '#/components/schemas/Contrato'))]
     #[OA\Response(response: 400, description: 'Error de validacion', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError'))]
     #[OA\Response(response: 404, description: 'Recurso no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
-    #[OA\Response(response: 409, description: 'Trastero ya alquilado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
+    #[OA\Response(response: 409, description: 'Trastero ya alquilado o solapamiento de fechas', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function update(int $id, #[MapRequestPayload] ContratoRequest $request): JsonResponse
     {
         $envelope = $this->commandBus->dispatch(new UpdateContratoCommand(
@@ -244,8 +241,7 @@ final class ContratoController extends AbstractController
             precioMensual: $request->precioMensual,
             fechaFin: $request->fechaFin,
             fianza: $request->fianza,
-            fianzaPagada: $request->fianzaPagada,
-            estado: $request->estado
+            fianzaPagada: $request->fianzaPagada
         ));
 
         $handledStamp = $envelope->last(HandledStamp::class);
@@ -269,9 +265,9 @@ final class ContratoController extends AbstractController
     }
 
     #[Route('/{id}/finalizar', name: 'contratos_finalizar', methods: ['PATCH'], requirements: ['id' => '\d+'])]
-    #[OA\Patch(summary: 'Finalizar contrato', description: 'Marca un contrato como finalizado')]
+    #[OA\Patch(summary: 'Finalizar contrato anticipadamente', description: 'Finaliza un contrato anticipadamente estableciendo la fecha de fin a hoy')]
     #[OA\Parameter(name: 'id', in: 'path', description: 'ID del contrato', schema: new OA\Schema(type: 'integer'))]
-    #[OA\Response(response: 200, description: 'Contrato finalizado', content: new OA\JsonContent(ref: '#/components/schemas/Contrato'))]
+    #[OA\Response(response: 200, description: 'Contrato finalizado anticipadamente', content: new OA\JsonContent(ref: '#/components/schemas/Contrato'))]
     #[OA\Response(response: 404, description: 'Contrato no encontrado', content: new OA\JsonContent(ref: '#/components/schemas/Error'))]
     public function finalizar(int $id): JsonResponse
     {

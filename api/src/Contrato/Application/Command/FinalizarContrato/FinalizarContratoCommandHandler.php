@@ -27,7 +27,7 @@ final readonly class FinalizarContratoCommandHandler
             throw ContratoNotFoundException::withId($command->id);
         }
 
-        $contrato->finalizar();
+        $contrato->finalizarAnticipadamente();
         $this->contratoRepository->save($contrato);
 
         $this->eventBus->dispatch(new ContratoFinalizado(

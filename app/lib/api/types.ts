@@ -182,8 +182,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Finalizar contrato
-         * @description Marca un contrato como finalizado
+         * Finalizar contrato anticipadamente
+         * @description Finaliza un contrato anticipadamente estableciendo la fecha de fin a hoy
          */
         patch: operations["patch_contratos_finalizar"];
         trace?: never;
@@ -769,9 +769,29 @@ export interface paths {
         };
         /**
          * Trasteros disponibles
-         * @description Obtiene todos los trasteros disponibles para alquilar
+         * @description Obtiene trasteros disponibles. Con parametro fecha, devuelve los que estaran disponibles en esa fecha.
          */
         get: operations["get_trasteros_disponibles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trasteros/{id}/disponibilidad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verificar disponibilidad de trastero
+         * @description Verifica si un trastero esta disponible en un rango de fechas
+         */
+        get: operations["get_trasteros_disponibilidad"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1069,7 +1089,7 @@ export interface components {
             fianza?: number;
             fianzaPagada?: boolean;
             /** @enum {string} */
-            estado?: "activo" | "finalizado" | "cancelado";
+            estado?: "activo" | "pendiente" | "finalizado" | "cancelado";
             /** Format: date-time */
             createdAt?: string;
             /** Format: date-time */
@@ -1175,31 +1195,6 @@ export interface components {
                 /** Format: float */
                 balanceMes?: number;
             };
-            prestamos?: {
-                /** Format: float */
-                pendienteTotal?: number;
-            };
-        };
-        DashboardChart: {
-            /**
-             * @description Período de datos mostrado
-             * @enum {string}
-             */
-            period?: "1m" | "3m" | "6m" | "1y";
-            data?: {
-                /** @description Fecha en formato YYYY-MM-DD (día) o YYYY-MM (mes) */
-                date?: string;
-                /**
-                 * Format: float
-                 * @description Total de ingresos para este período
-                 */
-                ingresos?: number;
-                /**
-                 * Format: float
-                 * @description Total de gastos para este período
-                 */
-                gastos?: number;
-            }[];
         };
         Rentabilidad: {
             localId?: number;
@@ -1251,11 +1246,6 @@ export interface components {
             fianza: number | null;
             /** @default false */
             fianzaPagada: boolean;
-            /**
-             * @default activo
-             * @enum {string}
-             */
-            estado: "activo" | "finalizado" | "cancelado" | "pendiente";
         };
         DireccionRequest: {
             /** @default null */
@@ -1713,7 +1703,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Filtrar por estado */
-                estado?: "activo" | "finalizado" | "cancelado";
+                estado?: "activo" | "pendiente" | "finalizado" | "cancelado";
             };
             header?: never;
             path?: never;
@@ -1769,11 +1759,6 @@ export interface operations {
                     fianza?: number | null;
                     /** @default false */
                     fianzaPagada?: boolean;
-                    /**
-                     * @default activo
-                     * @enum {string}
-                     */
-                    estado?: "activo" | "finalizado" | "cancelado";
                 };
             };
         };
@@ -1805,7 +1790,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Trastero ya alquilado */
+            /** @description Trastero ya alquilado o solapamiento de fechas */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1872,8 +1857,6 @@ export interface operations {
                     /** Format: float */
                     fianza?: number | null;
                     fianzaPagada?: boolean;
-                    /** @enum {string} */
-                    estado?: "activo" | "finalizado" | "cancelado";
                 };
             };
         };
@@ -1905,7 +1888,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Trastero ya alquilado */
+            /** @description Trastero ya alquilado o solapamiento de fechas */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2016,7 +1999,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Contrato finalizado */
+            /** @description Contrato finalizado anticipadamente */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2227,7 +2210,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DashboardChart"];
+                    "application/json": {
+                        /** @enum {string} */
+                        period?: "1m" | "3m" | "6m" | "1y";
+                        data?: {
+                            /** @description Fecha en formato YYYY-MM-DD o YYYY-MM */
+                            date?: string;
+                            /** Format: float */
+                            ingresos?: number;
+                            /** Format: float */
+                            gastos?: number;
+                        }[];
+                    };
                 };
             };
         };
@@ -3686,7 +3680,10 @@ export interface operations {
     };
     get_trasteros_disponibles: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Fecha para verificar disponibilidad (Y-m-d, default: hoy) */
+                fecha?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3702,6 +3699,43 @@ export interface operations {
                     "application/json": {
                         data?: components["schemas"]["Trastero"][];
                         meta?: components["schemas"]["PaginatedMeta"];
+                    };
+                };
+            };
+        };
+    };
+    get_trasteros_disponibilidad: {
+        parameters: {
+            query: {
+                /** @description Fecha inicio (Y-m-d) */
+                desde: string;
+                /** @description Fecha fin (Y-m-d, opcional) */
+                hasta?: string;
+            };
+            header?: never;
+            path: {
+                /** @description ID del trastero */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado de disponibilidad */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        disponible?: boolean;
+                        conflictos?: {
+                            contratoId?: number;
+                            /** Format: date */
+                            fechaInicio?: string;
+                            /** Format: date */
+                            fechaFin?: string | null;
+                        }[];
                     };
                 };
             };

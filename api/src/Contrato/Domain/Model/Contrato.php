@@ -147,12 +147,28 @@ class Contrato
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function finalizar(): void
+    public function estadoCalculado(?\DateTimeImmutable $fecha = null): ContratoEstado
     {
-        $this->estado = ContratoEstado::FINALIZADO;
-        if ($this->fechaFin === null) {
-            $this->fechaFin = new \DateTimeImmutable();
+        if ($this->estado === ContratoEstado::CANCELADO) {
+            return ContratoEstado::CANCELADO;
         }
+
+        $hoy = $fecha ?? new \DateTimeImmutable('today');
+
+        if ($hoy < $this->fechaInicio) {
+            return ContratoEstado::PENDIENTE;
+        }
+
+        if ($this->fechaFin !== null && $hoy > $this->fechaFin) {
+            return ContratoEstado::FINALIZADO;
+        }
+
+        return ContratoEstado::ACTIVO;
+    }
+
+    public function finalizarAnticipadamente(): void
+    {
+        $this->fechaFin = new \DateTimeImmutable('today');
         $this->updatedAt = new \DateTimeImmutable();
     }
 
@@ -176,7 +192,7 @@ class Contrato
 
     public function isActivo(): bool
     {
-        return $this->estado->isActivo();
+        return $this->estadoCalculado()->isActivo();
     }
 
     public function getDuracionMeses(): ?int

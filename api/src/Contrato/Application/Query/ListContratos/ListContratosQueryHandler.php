@@ -19,16 +19,19 @@ final readonly class ListContratosQueryHandler
 
     public function __invoke(ListContratosQuery $query): array
     {
+        $contratos = $this->contratoRepository->findAll();
+
         if ($query->estado !== null) {
-            $estado = ContratoEstado::fromString($query->estado);
-            $contratos = $this->contratoRepository->findByEstado($estado);
-        } else {
-            $contratos = $this->contratoRepository->findAll();
+            $estadoFiltro = ContratoEstado::fromString($query->estado);
+            $contratos = array_filter(
+                $contratos,
+                fn($contrato) => $contrato->estadoCalculado() === $estadoFiltro
+            );
         }
 
         return array_map(
             fn($contrato) => ContratoResponse::fromContrato($contrato),
-            $contratos
+            array_values($contratos)
         );
     }
 }

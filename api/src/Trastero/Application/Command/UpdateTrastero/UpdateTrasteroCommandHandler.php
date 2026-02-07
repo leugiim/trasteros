@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Trastero\Application\Command\UpdateTrastero;
 
+use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
 use App\Local\Domain\Exception\LocalNotFoundException;
 use App\Local\Domain\Model\LocalId;
 use App\Local\Domain\Repository\LocalRepositoryInterface;
@@ -27,6 +28,7 @@ final readonly class UpdateTrasteroCommandHandler
     public function __construct(
         private TrasteroRepositoryInterface $trasteroRepository,
         private LocalRepositoryInterface $localRepository,
+        private ContratoRepositoryInterface $contratoRepository,
         private EventDispatcherInterface $eventDispatcher
     ) {
     }
@@ -80,6 +82,8 @@ final readonly class UpdateTrasteroCommandHandler
             ));
         }
 
-        return TrasteroResponse::fromTrastero($trastero);
+        $contratos = $this->contratoRepository->findByTrasteroId($trastero->id()->value);
+
+        return TrasteroResponse::fromTrasteroWithContratos($trastero, $contratos);
     }
 }

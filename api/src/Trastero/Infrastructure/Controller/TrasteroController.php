@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Trastero\Infrastructure\Controller;
 
 use App\Auth\Infrastructure\Attribute\Auth;
+use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
 use App\Trastero\Application\Command\CreateTrastero\CreateTrasteroCommand;
 use App\Trastero\Application\Command\DeleteTrastero\DeleteTrasteroCommand;
 use App\Trastero\Application\Command\UpdateTrastero\UpdateTrasteroCommand;
@@ -14,6 +15,9 @@ use App\Trastero\Application\Query\FindTrastero\FindTrasteroQuery;
 use App\Trastero\Application\Query\FindTrasterosByLocal\FindTrasterosByLocalQuery;
 use App\Trastero\Application\Query\FindTrasterosDisponibles\FindTrasterosDisponiblesQuery;
 use App\Trastero\Application\Query\ListTrasteros\ListTrasterosQuery;
+use App\Trastero\Domain\Exception\TrasteroNotFoundException;
+use App\Trastero\Domain\Model\TrasteroId;
+use App\Trastero\Domain\Repository\TrasteroRepositoryInterface;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -31,7 +35,9 @@ final class TrasteroController extends AbstractController
 {
     public function __construct(
         private readonly MessageBusInterface $commandBus,
-        private readonly MessageBusInterface $queryBus
+        private readonly MessageBusInterface $queryBus,
+        private readonly ContratoRepositoryInterface $contratoRepository,
+        private readonly TrasteroRepositoryInterface $trasteroRepository
     ) {
     }
 
@@ -217,7 +223,8 @@ final class TrasteroController extends AbstractController
     }
 
     #[Route('/disponibles', name: 'trasteros_disponibles', methods: ['GET'])]
-    #[OA\Get(summary: 'Trasteros disponibles', description: 'Obtiene todos los trasteros disponibles para alquilar')]
+    #[OA\Get(summary: 'Trasteros disponibles', description: 'Obtiene trasteros disponibles. Con parametro fecha, devuelve los que estaran disponibles en esa fecha.')]
+    #[OA\Parameter(name: 'fecha', in: 'query', description: 'Fecha para verificar disponibilidad (Y-m-d, default: hoy)', schema: new OA\Schema(type: 'string', format: 'date'))]
     #[OA\Response(
         response: 200,
         description: 'Lista de trasteros disponibles',
@@ -228,8 +235,41 @@ final class TrasteroController extends AbstractController
             ]
         )
     )]
-    public function disponibles(): JsonResponse
+    public function disponibles(Request $request): JsonResponse
     {
+        $fechaStr = $request->query->get('fecha');
+
+        if ($fechaStr !== null) {
+            $fecha = new \DateTimeImmutable($fechaStr);
+            $trasteros = $this->trasteroRepository->findActiveTrasteros();
+            $disponibles = [];
+
+            foreach ($trasteros as $trastero) {
+                if ($trastero->estado()->value === 'mantenimiento') {
+                    continue;
+                }
+
+                $solapados = $this->contratoRepository->findContratosSolapados(
+                    $trastero->id()->value,
+                    $fecha,
+                    $fecha
+                );
+
+                if (count($solapados) === 0) {
+                    $contratos = $this->contratoRepository->findByTrasteroId($trastero->id()->value);
+                    $disponibles[] = TrasteroResponse::fromTrasteroWithContratos($trastero, $contratos);
+                }
+            }
+
+            return $this->json([
+                'data' => array_map(fn(TrasteroResponse $t) => $t->toArray(), $disponibles),
+                'meta' => [
+                    'total' => count($disponibles),
+                    'fecha' => $fecha->format('Y-m-d'),
+                ],
+            ]);
+        }
+
         $envelope = $this->queryBus->dispatch(new FindTrasterosDisponiblesQuery());
         $handledStamp = $envelope->last(HandledStamp::class);
 
@@ -241,6 +281,64 @@ final class TrasteroController extends AbstractController
             'meta' => [
                 'total' => count($trasteros),
             ],
+        ]);
+    }
+
+    #[Route('/{id}/disponibilidad', name: 'trasteros_disponibilidad', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[OA\Get(summary: 'Verificar disponibilidad de trastero', description: 'Verifica si un trastero esta disponible en un rango de fechas')]
+    #[OA\Parameter(name: 'id', in: 'path', description: 'ID del trastero', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Parameter(name: 'desde', in: 'query', required: true, description: 'Fecha inicio (Y-m-d)', schema: new OA\Schema(type: 'string', format: 'date'))]
+    #[OA\Parameter(name: 'hasta', in: 'query', description: 'Fecha fin (Y-m-d, opcional)', schema: new OA\Schema(type: 'string', format: 'date'))]
+    #[OA\Response(
+        response: 200,
+        description: 'Estado de disponibilidad',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'disponible', type: 'boolean'),
+                new OA\Property(property: 'conflictos', type: 'array', items: new OA\Items(
+                    properties: [
+                        new OA\Property(property: 'contratoId', type: 'integer'),
+                        new OA\Property(property: 'fechaInicio', type: 'string', format: 'date'),
+                        new OA\Property(property: 'fechaFin', type: 'string', format: 'date', nullable: true),
+                    ],
+                    type: 'object'
+                ))
+            ]
+        )
+    )]
+    public function disponibilidad(int $id, Request $request): JsonResponse
+    {
+        $trastero = $this->trasteroRepository->findById(TrasteroId::fromInt($id));
+        if ($trastero === null) {
+            throw TrasteroNotFoundException::withId($id);
+        }
+
+        $desdeStr = $request->query->get('desde');
+        if ($desdeStr === null) {
+            return $this->json([
+                'error' => ['message' => 'El parametro desde es obligatorio', 'code' => 'VALIDATION_ERROR'],
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $desde = new \DateTimeImmutable($desdeStr);
+        $hastaStr = $request->query->get('hasta');
+        $hasta = $hastaStr !== null ? new \DateTimeImmutable($hastaStr) : null;
+
+        $solapados = $this->contratoRepository->findContratosSolapados(
+            $id,
+            $desde,
+            $hasta
+        );
+
+        $conflictos = array_map(fn($contrato) => [
+            'contratoId' => $contrato->id()->value,
+            'fechaInicio' => $contrato->fechaInicio()->format('Y-m-d'),
+            'fechaFin' => $contrato->fechaFin()?->format('Y-m-d'),
+        ], $solapados);
+
+        return $this->json([
+            'disponible' => count($solapados) === 0,
+            'conflictos' => $conflictos,
         ]);
     }
 }

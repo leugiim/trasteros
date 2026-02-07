@@ -62,6 +62,6 @@ final readonly class CreateTrasteroCommandHandler
             numero: $trastero->numero()
         ));
 
-        return TrasteroResponse::fromTrastero($trastero);
+        return TrasteroResponse::fromTrasteroWithContratos($trastero, []);
     }
 }

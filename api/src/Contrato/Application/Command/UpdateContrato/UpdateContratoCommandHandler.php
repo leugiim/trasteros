@@ -11,7 +11,6 @@ use App\Contrato\Application\DTO\ContratoResponse;
 use App\Contrato\Domain\Exception\ContratoNotFoundException;
 use App\Contrato\Domain\Exception\InvalidContratoDateException;
 use App\Contrato\Domain\Exception\TrasteroAlreadyRentedException;
-use App\Contrato\Domain\Model\ContratoEstado;
 use App\Contrato\Domain\Model\Fianza;
 use App\Contrato\Domain\Model\PrecioMensual;
 use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
@@ -49,12 +48,6 @@ final readonly class UpdateContratoCommandHandler
             throw ClienteNotFoundException::withId($command->clienteId);
         }
 
-        if ($contrato->trastero()->id()->value !== $command->trasteroId) {
-            if ($this->contratoRepository->hasContratoActivoTrastero($command->trasteroId)) {
-                throw new TrasteroAlreadyRentedException($command->trasteroId);
-            }
-        }
-
         $fechaInicio = new \DateTimeImmutable($command->fechaInicio);
         $fechaFin = $command->fechaFin !== null ? new \DateTimeImmutable($command->fechaFin) : null;
 
@@ -62,9 +55,19 @@ final readonly class UpdateContratoCommandHandler
             throw new InvalidContratoDateException('La fecha de fin debe ser posterior a la fecha de inicio');
         }
 
+        $solapados = $this->contratoRepository->findContratosSolapados(
+            $command->trasteroId,
+            $fechaInicio,
+            $fechaFin,
+            $command->id
+        );
+
+        if (count($solapados) > 0) {
+            throw new TrasteroAlreadyRentedException($command->trasteroId);
+        }
+
         $precioMensual = PrecioMensual::fromFloat($command->precioMensual);
         $fianza = $command->fianza !== null ? Fianza::fromFloat($command->fianza) : null;
-        $estado = ContratoEstado::fromString($command->estado);
 
         $contrato->update(
             trastero: $trastero,
@@ -74,7 +77,7 @@ final readonly class UpdateContratoCommandHandler
             fechaFin: $fechaFin,
             fianza: $fianza,
             fianzaPagada: $command->fianzaPagada,
-            estado: $estado
+            estado: $contrato->estado()
         );
 
         $this->contratoRepository->save($contrato);

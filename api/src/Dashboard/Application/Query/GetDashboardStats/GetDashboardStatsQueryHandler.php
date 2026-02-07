@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Dashboard\Application\Query\GetDashboardStats;
 
 use App\Cliente\Domain\Repository\ClienteRepositoryInterface;
-use App\Contrato\Domain\Model\ContratoEstado;
 use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
 use App\Dashboard\Application\DTO\DashboardStatsResponse;
 use App\Gasto\Domain\Repository\GastoRepositoryInterface;
@@ -33,14 +32,14 @@ final readonly class GetDashboardStatsQueryHandler
     public function __invoke(GetDashboardStatsQuery $query): DashboardStatsResponse
     {
         $totalTrasteros = $this->trasteroRepository->count();
-        $trasterosDisponibles = $this->trasteroRepository->countDisponibles();
-        $trasterosOcupados = $this->trasteroRepository->countOcupados();
+        $trasterosOcupados = $this->contratoRepository->countTrasterosOcupados();
+        $trasterosDisponibles = $totalTrasteros - $trasterosOcupados - $this->contratoRepository->countTrasterosReservados();
 
         $tasaOcupacion = $totalTrasteros > 0
             ? round(($trasterosOcupados / $totalTrasteros) * 100, 2)
             : 0.0;
 
-        $contratosActivos = $this->contratoRepository->countByEstado(ContratoEstado::ACTIVO);
+        $contratosActivos = $this->contratoRepository->countContratosActivos();
         $totalContratos = $this->contratoRepository->count();
 
         $totalClientes = $this->clienteRepository->count();
@@ -64,7 +63,7 @@ final readonly class GetDashboardStatsQueryHandler
 
         return new DashboardStatsResponse(
             totalTrasteros: $totalTrasteros,
-            trasterosDisponibles: $trasterosDisponibles,
+            trasterosDisponibles: max(0, $trasterosDisponibles),
             trasterosOcupados: $trasterosOcupados,
             tasaOcupacion: $tasaOcupacion,
             contratosActivos: $contratosActivos,

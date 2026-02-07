@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Trastero\Application\Query\FindTrasterosByLocal;
 
+use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
 use App\Trastero\Application\DTO\TrasteroResponse;
 use App\Trastero\Domain\Repository\TrasteroRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -12,7 +13,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class FindTrasterosByLocalQueryHandler
 {
     public function __construct(
-        private TrasteroRepositoryInterface $trasteroRepository
+        private TrasteroRepositoryInterface $trasteroRepository,
+        private ContratoRepositoryInterface $contratoRepository
     ) {
     }
 
@@ -24,7 +26,10 @@ final readonly class FindTrasterosByLocalQueryHandler
         $trasteros = $this->trasteroRepository->findByLocalId($query->localId);
 
         return array_map(
-            fn($trastero) => TrasteroResponse::fromTrastero($trastero),
+            fn($trastero) => TrasteroResponse::fromTrasteroWithContratos(
+                $trastero,
+                $this->contratoRepository->findByTrasteroId($trastero->id()->value)
+            ),
             $trasteros
         );
     }

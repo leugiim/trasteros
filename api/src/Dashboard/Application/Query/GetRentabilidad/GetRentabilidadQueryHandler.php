@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Application\Query\GetRentabilidad;
 
+use App\Contrato\Domain\Repository\ContratoRepositoryInterface;
 use App\Dashboard\Application\DTO\RentabilidadResponse;
 use App\Gasto\Domain\Repository\GastoRepositoryInterface;
 use App\Ingreso\Domain\Repository\IngresoRepositoryInterface;
@@ -17,6 +18,7 @@ final readonly class GetRentabilidadQueryHandler
     public function __construct(
         private LocalRepositoryInterface $localRepository,
         private TrasteroRepositoryInterface $trasteroRepository,
+        private ContratoRepositoryInterface $contratoRepository,
         private IngresoRepositoryInterface $ingresoRepository,
         private GastoRepositoryInterface $gastoRepository
     ) {
@@ -31,10 +33,7 @@ final readonly class GetRentabilidadQueryHandler
             $localId = $local->id()->value;
 
             $totalTrasteros = $this->trasteroRepository->countByLocal($localId);
-            $trasterosOcupados = $this->trasteroRepository->countByLocalAndEstado(
-                $localId,
-                \App\Trastero\Domain\Model\TrasteroEstado::OCUPADO
-            );
+            $trasterosOcupados = $this->contratoRepository->countTrasterosOcupadosByLocal($localId);
             $tasaOcupacion = $totalTrasteros > 0
                 ? round(($trasterosOcupados / $totalTrasteros) * 100, 2)
                 : 0.0;

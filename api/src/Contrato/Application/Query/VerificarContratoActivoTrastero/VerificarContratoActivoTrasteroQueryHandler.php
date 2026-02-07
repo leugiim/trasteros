@@ -17,6 +17,8 @@ final readonly class VerificarContratoActivoTrasteroQueryHandler
 
     public function __invoke(VerificarContratoActivoTrasteroQuery $query): bool
     {
-        return $this->contratoRepository->hasContratoActivoTrastero($query->trasteroId);
+        $activos = $this->contratoRepository->findContratosActivosByTrastero($query->trasteroId);
+
+        return count($activos) > 0;
     }
 }
