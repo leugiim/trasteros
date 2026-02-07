@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\EventSubscriber;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,6 +16,11 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 final class ApiExceptionSubscriber implements EventSubscriberInterface
 {
+    public function __construct(
+        private readonly LoggerInterface $logger,
+    ) {
+    }
+
     public static function getSubscribedEvents(): array
     {
         return [
@@ -43,6 +49,10 @@ final class ApiExceptionSubscriber implements EventSubscriberInterface
         if ($throwable instanceof UnprocessableEntityHttpException) {
             $previous = $throwable->getPrevious();
             if ($previous instanceof ValidationFailedException) {
+                $this->logger->error('Validation error on {path}', [
+                    'path' => $request->getPathInfo(),
+                    'exception' => $throwable,
+                ]);
                 $event->setResponse($this->createValidationResponse($previous));
                 return;
             }
@@ -50,6 +60,12 @@ final class ApiExceptionSubscriber implements EventSubscriberInterface
 
         // Handle any other HttpException as JSON
         if ($throwable instanceof HttpExceptionInterface) {
+            $this->logger->error('HTTP error {status} on {path}: {message}', [
+                'status' => $throwable->getStatusCode(),
+                'path' => $request->getPathInfo(),
+                'message' => $throwable->getMessage(),
+                'exception' => $throwable,
+            ]);
             $event->setResponse(new JsonResponse([
                 'error' => [
                     'message' => $throwable->getMessage(),
@@ -60,6 +76,11 @@ final class ApiExceptionSubscriber implements EventSubscriberInterface
         }
 
         // Catch-all: any unhandled exception becomes a 500 JSON response
+        $this->logger->critical('Unhandled exception on {path}: {message}', [
+            'path' => $request->getPathInfo(),
+            'message' => $throwable->getMessage(),
+            'exception' => $throwable,
+        ]);
         $event->setResponse(new JsonResponse([
             'error' => [
                 'message' => 'Error interno del servidor',

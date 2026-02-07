@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\EventSubscriber;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,6 +14,11 @@ use Symfony\Component\Messenger\Exception\HandlerFailedException;
 
 final class MessengerExceptionSubscriber implements EventSubscriberInterface
 {
+    public function __construct(
+        private readonly LoggerInterface $logger,
+    ) {
+    }
+
     public static function getSubscribedEvents(): array
     {
         return [
@@ -41,6 +47,11 @@ final class MessengerExceptionSubscriber implements EventSubscriberInterface
         $response = $this->createResponseFromException($originalException);
 
         if ($response !== null) {
+            $this->logger->error('Domain exception: {class} - {message}', [
+                'class' => get_class($originalException),
+                'message' => $originalException->getMessage(),
+                'exception' => $originalException,
+            ]);
             $event->setResponse($response);
         }
     }
