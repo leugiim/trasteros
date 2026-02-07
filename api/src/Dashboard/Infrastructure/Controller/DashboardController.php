@@ -123,7 +123,22 @@ final class DashboardController extends AbstractController
     #[OA\Response(
         response: 200,
         description: 'Datos del gráfico',
-        content: new OA\JsonContent(ref: '#/components/schemas/DashboardChart')
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'period', type: 'string', enum: ['1m', '3m', '6m', '1y']),
+                new OA\Property(
+                    property: 'data',
+                    type: 'array',
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: 'date', type: 'string', description: 'Fecha en formato YYYY-MM-DD o YYYY-MM'),
+                            new OA\Property(property: 'ingresos', type: 'number', format: 'float'),
+                            new OA\Property(property: 'gastos', type: 'number', format: 'float')
+                        ]
+                    )
+                )
+            ]
+        )
     )]
     public function chart(Request $request): JsonResponse
     {
