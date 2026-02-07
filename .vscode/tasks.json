@@ -4,7 +4,7 @@
         {
             "label": "API: Symfony Server",
             "type": "shell",
-            "command": "cd api && symfony server:start",
+            "command": "cd api && symfony server:stop && symfony server:start",
             "isBackground": true,
             "problemMatcher": [],
             "presentation": {
