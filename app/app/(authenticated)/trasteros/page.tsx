@@ -11,9 +11,10 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search } from "lucide-react"
+import { ArrowUpDown, Plus, Search } from "lucide-react"
 import type { components } from "@/lib/api/types"
 import { useTrasteros } from "@/hooks/use-trasteros"
+import { TrasteroFormModal } from "@/components/trastero-form-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -161,9 +162,10 @@ function TableSkeleton() {
 }
 
 export default function TrasterosPage() {
-  const { trasteros, total, loading, error } = useTrasteros()
+  const { trasteros, total, loading, error, refetch } = useTrasteros()
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
+  const [modalOpen, setModalOpen] = useState(false)
 
   const table = useReactTable({
     data: trasteros,
@@ -195,7 +197,16 @@ export default function TrasterosPage() {
             {total} trasteros
           </span>
         </div>
+        <Button size="sm" onClick={() => setModalOpen(true)}>
+          <Plus className="size-4" />
+          Crear trastero
+        </Button>
       </div>
+      <TrasteroFormModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSuccess={refetch}
+      />
 
       <div className="px-4 lg:px-6">
         {error && (

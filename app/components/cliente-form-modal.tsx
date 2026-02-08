@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { fetchClient } from "@/lib/api/fetch-client"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -13,20 +14,62 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+export interface ClienteData {
+  id: number
+  nombre?: string
+  apellidos?: string
+  dniNie?: string | null
+  email?: string | null
+  telefono?: string | null
+  activo?: boolean
+}
+
 interface ClienteFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  cliente?: ClienteData | null
   onSuccess?: () => void
 }
 
 export function ClienteFormModal({
   open,
   onOpenChange,
+  cliente,
   onSuccess,
 }: ClienteFormModalProps) {
+  const isEditing = !!cliente
+
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+  const [nombre, setNombre] = useState("")
+  const [apellidos, setApellidos] = useState("")
+  const [dniNie, setDniNie] = useState("")
+  const [email, setEmail] = useState("")
+  const [telefono, setTelefono] = useState("")
+  const [activo, setActivo] = useState(true)
+
+  useEffect(() => {
+    if (!open) {
+      setError(null)
+      setFieldErrors({})
+      setNombre("")
+      setApellidos("")
+      setDniNie("")
+      setEmail("")
+      setTelefono("")
+      setActivo(true)
+      return
+    }
+    if (isEditing && cliente) {
+      setNombre(cliente.nombre ?? "")
+      setApellidos(cliente.apellidos ?? "")
+      setDniNie(cliente.dniNie ?? "")
+      setEmail(cliente.email ?? "")
+      setTelefono(cliente.telefono ?? "")
+      setActivo(cliente.activo ?? true)
+    }
+  }, [open])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -34,19 +77,21 @@ export function ClienteFormModal({
     setError(null)
     setFieldErrors({})
 
-    const formData = new FormData(e.currentTarget)
     const body = {
-      nombre: formData.get("nombre") as string,
-      apellidos: formData.get("apellidos") as string,
-      dniNie: (formData.get("dniNie") as string) || null,
-      email: (formData.get("email") as string) || null,
-      telefono: (formData.get("telefono") as string) || null,
-      activo: true,
+      nombre,
+      apellidos,
+      dniNie: dniNie || null,
+      email: email || null,
+      telefono: telefono || null,
+      activo,
     }
 
+    const url = isEditing ? `/api/clientes/${cliente!.id}` : "/api/clientes"
+    const method = isEditing ? "PUT" : "POST"
+
     try {
-      const res = await fetchClient("/api/clientes", {
-        method: "POST",
+      const res = await fetchClient(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
@@ -57,7 +102,7 @@ export function ClienteFormModal({
         if (details) {
           setFieldErrors(details)
         } else {
-          setError(data.error?.message ?? "Error al crear cliente")
+          setError(data.error?.message ?? (isEditing ? "Error al actualizar cliente" : "Error al crear cliente"))
         }
         return
       }
@@ -75,7 +120,7 @@ export function ClienteFormModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nuevo cliente</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar cliente" : "Nuevo cliente"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4">
@@ -85,48 +130,91 @@ export function ClienteFormModal({
             </div>
           )}
 
-          <FormField
-            label="Nombre *"
-            name="nombre"
-            required
-            maxLength={100}
-            placeholder="Nombre"
-            errors={fieldErrors.nombre}
-          />
+          <div className="grid gap-2">
+            <Label htmlFor="nombre">Nombre *</Label>
+            <Input
+              id="nombre"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              required
+              maxLength={100}
+              placeholder="Nombre"
+            />
+            {fieldErrors.nombre?.map((msg) => (
+              <p key={msg} className="text-destructive text-sm">{msg}</p>
+            ))}
+          </div>
 
-          <FormField
-            label="Apellidos *"
-            name="apellidos"
-            required
-            maxLength={200}
-            placeholder="Apellidos"
-            errors={fieldErrors.apellidos}
-          />
+          <div className="grid gap-2">
+            <Label htmlFor="apellidos">Apellidos *</Label>
+            <Input
+              id="apellidos"
+              value={apellidos}
+              onChange={(e) => setApellidos(e.target.value)}
+              required
+              maxLength={200}
+              placeholder="Apellidos"
+            />
+            {fieldErrors.apellidos?.map((msg) => (
+              <p key={msg} className="text-destructive text-sm">{msg}</p>
+            ))}
+          </div>
 
-          <FormField
-            label="DNI/NIE"
-            name="dniNie"
-            maxLength={20}
-            placeholder="12345678A"
-            errors={fieldErrors.dniNie}
-          />
+          <div className="grid gap-2">
+            <Label htmlFor="dniNie">DNI/NIE</Label>
+            <Input
+              id="dniNie"
+              value={dniNie}
+              onChange={(e) => setDniNie(e.target.value)}
+              maxLength={20}
+              placeholder="12345678A"
+            />
+            {fieldErrors.dniNie?.map((msg) => (
+              <p key={msg} className="text-destructive text-sm">{msg}</p>
+            ))}
+          </div>
 
-          <FormField
-            label="Email"
-            name="email"
-            type="email"
-            maxLength={255}
-            placeholder="correo@ejemplo.com"
-            errors={fieldErrors.email}
-          />
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              maxLength={255}
+              placeholder="correo@ejemplo.com"
+            />
+            {fieldErrors.email?.map((msg) => (
+              <p key={msg} className="text-destructive text-sm">{msg}</p>
+            ))}
+          </div>
 
-          <FormField
-            label="Teléfono"
-            name="telefono"
-            maxLength={20}
-            placeholder="600 000 000"
-            errors={fieldErrors.telefono}
-          />
+          <div className="grid gap-2">
+            <Label htmlFor="telefono">Teléfono</Label>
+            <Input
+              id="telefono"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              maxLength={20}
+              placeholder="600 000 000"
+            />
+            {fieldErrors.telefono?.map((msg) => (
+              <p key={msg} className="text-destructive text-sm">{msg}</p>
+            ))}
+          </div>
+
+          {isEditing && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="activo"
+                checked={activo}
+                onCheckedChange={(checked) => setActivo(checked === true)}
+              />
+              <Label htmlFor="activo" className="cursor-pointer">
+                Cliente activo
+              </Label>
+            </div>
+          )}
 
           <DialogFooter>
             <Button
@@ -137,39 +225,11 @@ export function ClienteFormModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Guardando..." : "Crear cliente"}
+              {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear cliente"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function FormField({
-  label,
-  name,
-  errors,
-  ...inputProps
-}: {
-  label: string
-  name: string
-  errors?: string[]
-} & React.ComponentProps<typeof Input>) {
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor={name}>{label}</Label>
-      <Input
-        id={name}
-        name={name}
-        aria-invalid={errors ? true : undefined}
-        {...inputProps}
-      />
-      {errors?.map((msg) => (
-        <p key={msg} className="text-destructive text-sm">
-          {msg}
-        </p>
-      ))}
-    </div>
   )
 }

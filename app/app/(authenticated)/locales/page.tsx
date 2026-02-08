@@ -11,9 +11,10 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search } from "lucide-react"
+import { ArrowUpDown, Plus, Search } from "lucide-react"
 import type { components } from "@/lib/api/types"
 import { useLocales } from "@/hooks/use-locales"
+import { LocalFormModal } from "@/components/local-form-modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -133,9 +134,10 @@ function TableSkeleton() {
 }
 
 export default function LocalesPage() {
-  const { locales, total, loading, error } = useLocales()
+  const { locales, total, loading, error, refetch } = useLocales()
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
+  const [modalOpen, setModalOpen] = useState(false)
 
   const table = useReactTable({
     data: locales,
@@ -167,7 +169,16 @@ export default function LocalesPage() {
             {total} locales
           </span>
         </div>
+        <Button size="sm" onClick={() => setModalOpen(true)}>
+          <Plus className="size-4" />
+          Crear local
+        </Button>
       </div>
+      <LocalFormModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSuccess={refetch}
+      />
 
       <div className="px-4 lg:px-6">
         {error && (
