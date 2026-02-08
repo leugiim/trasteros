@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { fetchClient } from "@/lib/api/fetch-client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -44,7 +45,7 @@ export function ClienteFormModal({
     }
 
     try {
-      const res = await fetch("/api/clientes", {
+      const res = await fetchClient("/api/clientes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

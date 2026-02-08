@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { fetchClient } from "@/lib/api/fetch-client"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
   Card,
@@ -74,7 +75,7 @@ export function ChartIngresosGastos() {
 
   const fetchData = useCallback((p: string) => {
     setLoading(true)
-    fetch(`/api/dashboard/chart?period=${p}`)
+    fetchClient(`/api/dashboard/chart?period=${p}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((json: ChartResponse | null) => {
         if (json) setData(json.data)

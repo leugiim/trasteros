@@ -14,6 +14,12 @@ doctrine:
             Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
         auto_mapping: true
         mappings:
+            Auth:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Auth/Domain/Model'
+                prefix: 'App\Auth\Domain\Model'
+                alias: Auth
             Users:
                 type: attribute
                 is_bundle: false

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { fetchClient } from "@/lib/api/fetch-client"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { CalendarIcon, XIcon } from "lucide-react"
@@ -63,7 +64,7 @@ export function ContratoFormModal({
   useEffect(() => {
     if (!open) return
     setLoadingTrasteros(true)
-    fetch("/api/trasteros?estado=disponible")
+    fetchClient("/api/trasteros?estado=disponible")
       .then((res) => (res.ok ? res.json() : { data: [] }))
       .then((data) => setTrasteros(data.data ?? []))
       .finally(() => setLoadingTrasteros(false))
@@ -106,7 +107,7 @@ export function ContratoFormModal({
     }
 
     try {
-      const res = await fetch("/api/contratos", {
+      const res = await fetchClient("/api/contratos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

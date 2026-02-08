@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Mail, Phone, IdCard, Calendar, Plus } from "lucide-react"
 import type { components } from "@/lib/api/types"
+import { fetchClient } from "@/lib/api/fetch-client"
 import { ContratoFormModal } from "@/components/contrato-form-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -69,11 +70,11 @@ export default function ClienteDetailPage() {
   const fetchData = () => {
     setLoading(true)
     Promise.all([
-      fetch(`/api/clientes/${id}`).then((res) => {
+      fetchClient(`/api/clientes/${id}`).then((res) => {
         if (!res.ok) throw new Error("Cliente no encontrado")
         return res.json()
       }),
-      fetch(`/api/clientes/${id}/contratos`).then((res) =>
+      fetchClient(`/api/clientes/${id}/contratos`).then((res) =>
         res.ok ? res.json() : { data: [] }
       ),
     ])
@@ -138,19 +139,21 @@ export default function ClienteDetailPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle className="text-lg">
-            Contratos
-            {contratos.length > 0 && (
-              <Badge variant="outline" className="ml-2 text-xs font-normal">
-                {contratos.length}
-              </Badge>
-            )}
-          </CardTitle>
-          <Button size="sm" onClick={() => setContratoModalOpen(true)}>
-            <Plus className="size-4" />
-            Crear contrato
-          </Button>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">
+              Contratos
+              {contratos.length > 0 && (
+                <Badge variant="outline" className="ml-2 text-xs font-normal">
+                  {contratos.length}
+                </Badge>
+              )}
+            </CardTitle>
+            <Button size="sm" onClick={() => setContratoModalOpen(true)}>
+              <Plus className="size-4" />
+              Crear contrato
+            </Button>
+          </div>
         </CardHeader>
 
         <ContratoFormModal

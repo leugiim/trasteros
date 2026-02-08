@@ -497,6 +497,9 @@ nelmio_api_doc:
                         token:
                             type: string
                             example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...'
+                        refreshToken:
+                            type: string
+                            example: 'a1b2c3d4e5f6...'
                         user:
                             $ref: '#/components/schemas/User'
         security:

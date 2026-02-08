@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import type { components } from "@/lib/api/types"
+import { fetchClient } from "@/lib/api/fetch-client"
 
 type Trastero = components["schemas"]["Trastero"]
 
@@ -21,7 +22,7 @@ export function useTrasteros(): UseTrasterosReturn {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/trasteros")
+      const res = await fetchClient("/api/trasteros")
       if (!res.ok) throw new Error("Error al cargar trasteros")
       const data = await res.json()
       setTrasteros(data.data ?? [])

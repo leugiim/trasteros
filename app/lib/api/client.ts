@@ -1,5 +1,3 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -16,13 +14,18 @@ export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const res = await fetch(`/api${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
     },
   })
+
+  if (res.status === 401 && typeof window !== "undefined") {
+    window.location.href = "/"
+    throw new ApiError(401, "SESSION_EXPIRED", "Sesion expirada")
+  }
 
   const data = await res.json()
 

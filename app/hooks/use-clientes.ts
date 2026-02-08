@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import type { components } from "@/lib/api/types"
+import { fetchClient } from "@/lib/api/fetch-client"
 
 type Cliente = components["schemas"]["Cliente"]
 
@@ -21,7 +22,7 @@ export function useClientes(): UseClientesReturn {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/clientes")
+      const res = await fetchClient("/api/clientes")
       if (!res.ok) throw new Error("Error al cargar clientes")
       const data = await res.json()
       setClientes(data.data ?? [])

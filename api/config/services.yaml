@@ -58,6 +58,10 @@ services:
     App\Prestamo\Domain\Repository\PrestamoRepositoryInterface:
         class: App\Prestamo\Infrastructure\Persistence\Doctrine\Repository\DoctrinePrestamoRepository
 
+    # Auth module - Repository binding
+    App\Auth\Domain\Repository\RefreshTokenRepositoryInterface:
+        class: App\Auth\Infrastructure\Persistence\Doctrine\Repository\DoctrineRefreshTokenRepository
+
     # Auth module - Event Subscriber
     App\Auth\Infrastructure\EventSubscriber\AuthSubscriber:
         tags:

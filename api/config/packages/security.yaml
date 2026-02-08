@@ -14,8 +14,8 @@ security:
         dev:
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
-        login:
-            pattern: ^/api/auth/login$
+        auth:
+            pattern: ^/api/auth/(login|refresh)$
             stateless: true
             security: false
         api:

@@ -12,6 +12,7 @@ export const API_URL = process.env.API_URL
 
 export interface SessionData {
   token?: string
+  refreshToken?: string
   user?: {
     id: string
     nombre: string

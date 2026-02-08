@@ -7,6 +7,8 @@ namespace App\Auth\Application\Command\Login;
 use App\Auth\Application\DTO\LoginResponse;
 use App\Auth\Domain\Exception\InvalidCredentialsException;
 use App\Auth\Domain\Exception\UserInactiveException;
+use App\Auth\Domain\Model\RefreshToken;
+use App\Auth\Domain\Repository\RefreshTokenRepositoryInterface;
 use App\Users\Domain\Model\UserEmail;
 use App\Users\Domain\Repository\UserRepositoryInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -19,7 +21,8 @@ final readonly class LoginCommandHandler
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private UserPasswordHasherInterface $passwordHasher,
-        private JWTTokenManagerInterface $jwtManager
+        private JWTTokenManagerInterface $jwtManager,
+        private RefreshTokenRepositoryInterface $refreshTokenRepository
     ) {
     }
 
@@ -42,6 +45,10 @@ final readonly class LoginCommandHandler
 
         $token = $this->jwtManager->create($user);
 
-        return LoginResponse::create($token, $user);
+        $this->refreshTokenRepository->deleteByUserId($user->id()->value);
+        $refreshToken = RefreshToken::create($user->id()->value);
+        $this->refreshTokenRepository->save($refreshToken);
+
+        return LoginResponse::create($token, $refreshToken->token(), $user);
     }
 }

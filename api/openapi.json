@@ -17,8 +17,8 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Iniciar sesi\u00f3n",
-                "description": "Autentica un usuario y devuelve un token JWT",
+                "summary": "Iniciar sesion",
+                "description": "Autentica un usuario y devuelve un token JWT junto con un refresh token",
                 "operationId": "post_auth_login",
                 "requestBody": {
                     "required": true,
@@ -52,43 +52,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "token": {
-                                            "type": "string",
-                                            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
-                                        },
-                                        "user": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "string",
-                                                    "format": "uuid"
-                                                },
-                                                "email": {
-                                                    "type": "string",
-                                                    "format": "email"
-                                                },
-                                                "nombre": {
-                                                    "type": "string"
-                                                },
-                                                "rol": {
-                                                    "type": "string",
-                                                    "enum": [
-                                                        "admin",
-                                                        "gestor",
-                                                        "readonly"
-                                                    ]
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/LoginResponse"
                                 }
                             }
                         }
                     },
                     "401": {
-                        "description": "Credenciales inv\u00e1lidas",
+                        "description": "Credenciales invalidas",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -99,6 +69,57 @@
                     },
                     "403": {
                         "description": "Usuario inactivo",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refrescar token",
+                "description": "Genera un nuevo JWT y refresh token a partir de un refresh token valido",
+                "operationId": "post_auth_refresh",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "refreshToken"
+                                ],
+                                "properties": {
+                                    "refreshToken": {
+                                        "type": "string",
+                                        "example": "a1b2c3d4e5f6..."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token refrescado exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Refresh token invalido o expirado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -4807,6 +4828,10 @@
                         "type": "string",
                         "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
                     },
+                    "refreshToken": {
+                        "type": "string",
+                        "example": "a1b2c3d4e5f6..."
+                    },
                     "user": {
                         "$ref": "#/components/schemas/User"
                     }
@@ -4823,6 +4848,17 @@
                         "type": "string"
                     },
                     "password": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "RefreshTokenRequest": {
+                "required": [
+                    "refreshToken"
+                ],
+                "properties": {
+                    "refreshToken": {
                         "type": "string"
                     }
                 },

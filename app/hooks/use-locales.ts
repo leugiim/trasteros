@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import type { components } from "@/lib/api/types"
+import { fetchClient } from "@/lib/api/fetch-client"
 
 type Local = components["schemas"]["Local"]
 
@@ -21,7 +22,7 @@ export function useLocales(): UseLocalesReturn {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/locales")
+      const res = await fetchClient("/api/locales")
       if (!res.ok) throw new Error("Error al cargar locales")
       const data = await res.json()
       setLocales(data.data ?? [])

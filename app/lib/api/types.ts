@@ -14,10 +14,30 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Iniciar sesión
-         * @description Autentica un usuario y devuelve un token JWT
+         * Iniciar sesion
+         * @description Autentica un usuario y devuelve un token JWT junto con un refresh token
          */
         post: operations["post_auth_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refrescar token
+         * @description Genera un nuevo JWT y refresh token a partir de un refresh token valido
+         */
+        post: operations["post_auth_refresh"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1211,11 +1231,16 @@ export interface components {
         LoginResponse: {
             /** @example eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9... */
             token?: string;
+            /** @example a1b2c3d4e5f6... */
+            refreshToken?: string;
             user?: components["schemas"]["User"];
         };
         LoginRequest: {
             email: string;
             password: string;
+        };
+        RefreshTokenRequest: {
+            refreshToken: string;
         };
         ClienteRequest: {
             /** @default  */
@@ -1457,22 +1482,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @example eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9... */
-                        token?: string;
-                        user?: {
-                            /** Format: uuid */
-                            id?: string;
-                            /** Format: email */
-                            email?: string;
-                            nombre?: string;
-                            /** @enum {string} */
-                            rol?: "admin" | "gestor" | "readonly";
-                        };
-                    };
+                    "application/json": components["schemas"]["LoginResponse"];
                 };
             };
-            /** @description Credenciales inválidas */
+            /** @description Credenciales invalidas */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -1483,6 +1496,42 @@ export interface operations {
             };
             /** @description Usuario inactivo */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    post_auth_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @example a1b2c3d4e5f6... */
+                    refreshToken: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Token refrescado exitosamente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponse"];
+                };
+            };
+            /** @description Refresh token invalido o expirado */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

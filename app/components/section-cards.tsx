@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { fetchClient } from "@/lib/api/fetch-client"
 import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, CalendarClock, Landmark } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -48,7 +49,7 @@ export function SectionCards() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
 
   useEffect(() => {
-    fetch("/api/dashboard/stats")
+    fetchClient("/api/dashboard/stats")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setStats(data)
