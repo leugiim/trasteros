@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Mail, Phone, IdCard, Calendar, Plus } from "lucide-react"
+import { ArrowLeft, Mail, Phone, IdCard, Calendar, Plus, Pencil } from "lucide-react"
 import type { components } from "@/lib/api/types"
 import { fetchClient } from "@/lib/api/fetch-client"
-import { ContratoFormModal } from "@/components/contrato-form-modal"
+import { ContratoFormModal, type ContratoData } from "@/components/contrato-form-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -66,6 +66,7 @@ export default function ClienteDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [contratoModalOpen, setContratoModalOpen] = useState(false)
+  const [editingContrato, setEditingContrato] = useState<ContratoData | null>(null)
 
   const fetchData = () => {
     setLoading(true)
@@ -162,6 +163,13 @@ export default function ClienteDetailPage() {
           clienteId={cliente.id!}
           onSuccess={fetchData}
         />
+        <ContratoFormModal
+          open={!!editingContrato}
+          onOpenChange={(open) => { if (!open) setEditingContrato(null) }}
+          clienteId={cliente.id!}
+          contrato={editingContrato}
+          onSuccess={fetchData}
+        />
         <div className="px-6 pb-6">
           {contratos.length === 0 ? (
             <p className="text-muted-foreground py-4 text-center text-sm">
@@ -179,6 +187,7 @@ export default function ClienteDetailPage() {
                     <TableHead>Precio/mes</TableHead>
                     <TableHead>Fianza</TableHead>
                     <TableHead>Estado</TableHead>
+                    <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -201,6 +210,25 @@ export default function ClienteDetailPage() {
                         <Badge variant={estadoVariant[c.estado ?? ""] ?? "outline"}>
                           {c.estado ?? "-"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setEditingContrato({
+                            id: c.id!,
+                            trastero: c.trastero,
+                            clienteId: cliente!.id!,
+                            fechaInicio: c.fechaInicio,
+                            fechaFin: c.fechaFin,
+                            precioMensual: c.precioMensual,
+                            fianza: c.fianza,
+                            fianzaPagada: c.fianzaPagada,
+                          })}
+                        >
+                          <Pencil className="size-3.5" />
+                          <span className="sr-only">Editar</span>
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
