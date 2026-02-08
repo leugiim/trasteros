@@ -8,6 +8,8 @@ import { fetchClient } from "@/lib/api/fetch-client"
 import { ClienteFormModal } from "@/components/cliente-form-modal"
 import { ContratoFormModal, type ContratoData } from "@/components/contrato-form-modal"
 import { IngresoFormModal } from "@/components/ingreso-form-modal"
+import { ContratosTable } from "@/components/contratos-table"
+import { IngresosTable } from "@/components/ingresos-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,14 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { formatDate } from "@/lib/format"
 
 type Cliente = components["schemas"]["Cliente"]
 
@@ -48,40 +43,6 @@ interface Ingreso {
   fechaPago: string
   metodoPago?: string | null
   categoria: string
-}
-
-const estadoVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  activo: "default",
-  pendiente: "outline",
-  finalizado: "secondary",
-  cancelado: "destructive",
-}
-
-const categoriaLabel: Record<string, string> = {
-  mensualidad: "Mensualidad",
-  fianza: "Fianza",
-  penalizacion: "Penalización",
-  otros: "Otros",
-}
-
-const metodoPagoLabel: Record<string, string> = {
-  efectivo: "Efectivo",
-  transferencia: "Transferencia",
-  tarjeta: "Tarjeta",
-  bizum: "Bizum",
-}
-
-function formatCurrency(amount: number | null | undefined) {
-  if (amount == null) return "-"
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount)
-}
-
-function formatDate(date: string | null | undefined) {
-  if (!date) return "-"
-  return new Date(date).toLocaleDateString("es-ES")
 }
 
 export default function ClienteDetailPage() {
@@ -242,69 +203,19 @@ export default function ClienteDetailPage() {
               onSuccess={fetchData}
             />
             <div className="px-6 pb-6">
-              {contratos.length === 0 ? (
-                <p className="text-muted-foreground py-4 text-center text-sm">
-                  Este cliente no tiene contratos.
-                </p>
-              ) : (
-                <div className="overflow-hidden rounded-lg border">
-                  <Table>
-                    <TableHeader className="bg-muted">
-                      <TableRow>
-                        <TableHead>Trastero</TableHead>
-                        <TableHead>Inicio</TableHead>
-                        <TableHead>Fin</TableHead>
-                        <TableHead>Precio/mes</TableHead>
-                        <TableHead>Fianza</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead className="w-10" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {contratos.map((c) => (
-                        <TableRow key={c.id}>
-                          <TableCell className="font-medium">
-                            {c.trastero?.numero ?? "-"}
-                          </TableCell>
-                          <TableCell>{formatDate(c.fechaInicio)}</TableCell>
-                          <TableCell>{formatDate(c.fechaFin)}</TableCell>
-                          <TableCell className="tabular-nums">{formatCurrency(c.precioMensual)}</TableCell>
-                          <TableCell>
-                            <span className="tabular-nums">{formatCurrency(c.fianza)}</span>
-                            {c.fianzaPagada === false && (
-                              <Badge variant="destructive" className="ml-1.5 text-[10px]">Pendiente</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={estadoVariant[c.estado ?? ""] ?? "outline"}>
-                              {c.estado ?? "-"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => setEditingContrato({
-                                id: c.id!,
-                                trastero: c.trastero,
-                                clienteId: cliente!.id!,
-                                fechaInicio: c.fechaInicio,
-                                fechaFin: c.fechaFin,
-                                precioMensual: c.precioMensual,
-                                fianza: c.fianza,
-                                fianzaPagada: c.fianzaPagada,
-                              })}
-                            >
-                              <Pencil className="size-3.5" />
-                              <span className="sr-only">Editar</span>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+              <ContratosTable
+                contratos={contratos}
+                onEdit={(c) => setEditingContrato({
+                  id: c.id!,
+                  trastero: c.trastero,
+                  clienteId: cliente!.id!,
+                  fechaInicio: c.fechaInicio,
+                  fechaFin: c.fechaFin,
+                  precioMensual: c.precioMensual,
+                  fianza: c.fianza,
+                  fianzaPagada: c.fianzaPagada,
+                })}
+              />
             </div>
           </Card>
         </div>
@@ -337,46 +248,10 @@ export default function ClienteDetailPage() {
             onSuccess={fetchData}
           />
           <div className="px-6 pb-6">
-            {ingresos.length === 0 ? (
-              <p className="text-muted-foreground py-4 text-center text-sm">
-                Este cliente no tiene ingresos registrados.
-              </p>
-            ) : (
-              <div className="overflow-hidden rounded-lg border">
-                <Table>
-                  <TableHeader className="bg-muted">
-                    <TableRow>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Concepto</TableHead>
-                      <TableHead>Importe</TableHead>
-                      <TableHead>Categoría</TableHead>
-                      <TableHead>Método</TableHead>
-                      <TableHead>Trastero</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {ingresos.map((ing) => (
-                      <TableRow key={ing.id}>
-                        <TableCell>{formatDate(ing.fechaPago)}</TableCell>
-                        <TableCell className="max-w-37.5 truncate">{ing.concepto}</TableCell>
-                        <TableCell className="tabular-nums font-medium">{formatCurrency(ing.importe)}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-[10px]">
-                            {categoriaLabel[ing.categoria] ?? ing.categoria}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">
-                          {ing.metodoPago ? (metodoPagoLabel[ing.metodoPago] ?? ing.metodoPago) : "-"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">
-                          {contratoTrasteroMap.get(ing.contratoId) ?? "-"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+            <IngresosTable
+              ingresos={ingresos}
+              contratoTrasteroMap={contratoTrasteroMap}
+            />
           </div>
         </Card>
       </div>
