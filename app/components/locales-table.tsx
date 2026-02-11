@@ -12,7 +12,8 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search } from "lucide-react"
+import { ArrowUpDown, Eye, Search } from "lucide-react"
+import Link from "next/link"
 import type { components } from "@/lib/api/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,6 +30,7 @@ type Local = components["schemas"]["Local"]
 
 interface LocalesTableProps {
   locales: Local[]
+  action?: React.ReactNode
 }
 
 function formatCurrency(amount: number | null | undefined) {
@@ -115,6 +117,18 @@ const columns: ColumnDef<Local>[] = [
       </span>
     ),
   },
+  {
+    id: "actions",
+    header: "",
+    cell: ({ row }) => (
+      <Button variant="ghost" size="icon-sm" asChild>
+        <Link href={`/locales/${row.original.id}`}>
+          <Eye className="size-4" />
+          <span className="sr-only">Ver local</span>
+        </Link>
+      </Button>
+    ),
+  },
 ]
 
 function TableSkeleton() {
@@ -136,7 +150,7 @@ function TableSkeleton() {
   )
 }
 
-export function LocalesTable({ locales }: LocalesTableProps) {
+export function LocalesTable({ locales, action }: LocalesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
 
@@ -155,19 +169,22 @@ export function LocalesTable({ locales }: LocalesTableProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <div className="relative">
-          <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
-          <Input
-            placeholder="Buscar locales..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-64 pl-9"
-          />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
+            <Input
+              placeholder="Buscar locales..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="w-64 pl-9"
+            />
+          </div>
+          <span className="text-muted-foreground text-sm">
+            {locales.length} locales
+          </span>
         </div>
-        <span className="text-muted-foreground text-sm">
-          {locales.length} locales
-        </span>
+        {action}
       </div>
 
       <div className="overflow-hidden rounded-lg border">

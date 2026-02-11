@@ -29,12 +29,16 @@ interface TrasteroFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
+  defaultLocalId?: number
+  defaultLocalNombre?: string
 }
 
 export function TrasteroFormModal({
   open,
   onOpenChange,
   onSuccess,
+  defaultLocalId,
+  defaultLocalNombre,
 }: TrasteroFormModalProps) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -42,25 +46,25 @@ export function TrasteroFormModal({
   const [locales, setLocales] = useState<LocalOption[]>([])
   const [loadingLocales, setLoadingLocales] = useState(false)
 
-  const [localId, setLocalId] = useState("")
+  const [localId, setLocalId] = useState(defaultLocalId ? String(defaultLocalId) : "")
   const [numero, setNumero] = useState("")
   const [nombre, setNombre] = useState("")
   const [superficie, setSuperficie] = useState("")
   const [precioMensual, setPrecioMensual] = useState("")
 
   useEffect(() => {
-    if (!open) return
+    if (!open || defaultLocalId) return
     setLoadingLocales(true)
     fetchClient("/api/locales")
       .then((res) => (res.ok ? res.json() : { data: [] }))
       .then((data) => setLocales((data.data ?? []).map((l: { id: number; nombre: string }) => ({ id: l.id, nombre: l.nombre }))))
       .finally(() => setLoadingLocales(false))
-  }, [open])
+  }, [open, defaultLocalId])
 
   const resetForm = () => {
     setError(null)
     setFieldErrors({})
-    setLocalId("")
+    setLocalId(defaultLocalId ? String(defaultLocalId) : "")
     setNumero("")
     setNombre("")
     setSuperficie("")
@@ -129,28 +133,32 @@ export function TrasteroFormModal({
 
           <div className="grid gap-2">
             <Label htmlFor="localId">Local *</Label>
-            <Select value={localId} onValueChange={setLocalId} required disabled={loadingLocales}>
-              <SelectTrigger id="localId" className="w-full">
-                {loadingLocales ? (
-                  <span className="text-muted-foreground">Cargando locales...</span>
-                ) : (
-                  <SelectValue placeholder="Seleccionar local" />
-                )}
-              </SelectTrigger>
-              <SelectContent>
-                {locales.length === 0 ? (
-                  <SelectItem value="_empty" disabled>
-                    No hay locales
-                  </SelectItem>
-                ) : (
-                  locales.map((l) => (
-                    <SelectItem key={l.id} value={String(l.id)}>
-                      {l.nombre}
+            {defaultLocalId ? (
+              <Input value={defaultLocalNombre ?? `Local #${defaultLocalId}`} disabled />
+            ) : (
+              <Select value={localId} onValueChange={setLocalId} required disabled={loadingLocales}>
+                <SelectTrigger id="localId" className="w-full">
+                  {loadingLocales ? (
+                    <span className="text-muted-foreground">Cargando locales...</span>
+                  ) : (
+                    <SelectValue placeholder="Seleccionar local" />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {locales.length === 0 ? (
+                    <SelectItem value="_empty" disabled>
+                      No hay locales
                     </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+                  ) : (
+                    locales.map((l) => (
+                      <SelectItem key={l.id} value={String(l.id)}>
+                        {l.nombre}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            )}
             {fieldErrors.localId?.map((msg) => (
               <p key={msg} className="text-destructive text-sm">{msg}</p>
             ))}

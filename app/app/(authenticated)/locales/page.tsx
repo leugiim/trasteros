@@ -27,17 +27,11 @@ function TableSkeleton() {
 }
 
 export default function LocalesPage() {
-  const { locales, total, loading, error, refetch } = useLocales()
+  const { locales, loading, error, refetch } = useLocales()
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="flex items-center justify-end px-4 lg:px-6">
-        <Button size="sm" onClick={() => setModalOpen(true)}>
-          <Plus className="size-4" />
-          Crear local
-        </Button>
-      </div>
       <LocalFormModal
         open={modalOpen}
         onOpenChange={setModalOpen}
@@ -54,7 +48,15 @@ export default function LocalesPage() {
         {loading ? (
           <TableSkeleton />
         ) : (
-          <LocalesTable locales={locales} />
+          <LocalesTable
+            locales={locales}
+            action={
+              <Button size="sm" onClick={() => setModalOpen(true)}>
+                <Plus className="size-4" />
+                Crear local
+              </Button>
+            }
+          />
         )}
       </div>
     </div>

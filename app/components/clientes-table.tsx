@@ -30,6 +30,7 @@ type Cliente = components["schemas"]["Cliente"]
 
 interface ClientesTableProps {
   clientes: Cliente[]
+  action?: React.ReactNode
 }
 
 const columns: ColumnDef<Cliente>[] = [
@@ -115,7 +116,7 @@ function TableSkeleton() {
   )
 }
 
-export function ClientesTable({ clientes }: ClientesTableProps) {
+export function ClientesTable({ clientes, action }: ClientesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
 
@@ -134,19 +135,22 @@ export function ClientesTable({ clientes }: ClientesTableProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <div className="relative">
-          <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
-          <Input
-            placeholder="Buscar clientes..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-64 pl-9"
-          />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
+            <Input
+              placeholder="Buscar clientes..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="w-64 pl-9"
+            />
+          </div>
+          <span className="text-muted-foreground text-sm">
+            {clientes.length} clientes
+          </span>
         </div>
-        <span className="text-muted-foreground text-sm">
-          {clientes.length} clientes
-        </span>
+        {action}
       </div>
 
       <div className="overflow-hidden rounded-lg border">

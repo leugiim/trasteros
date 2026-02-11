@@ -13,13 +13,6 @@ export default function ClientesPage() {
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="flex items-center justify-end px-4 lg:px-6">
-        <Button onClick={() => setModalOpen(true)}>
-          <Plus className="size-4" />
-          Crear cliente
-        </Button>
-      </div>
-
       <ClienteFormModal
         open={modalOpen}
         onOpenChange={setModalOpen}
@@ -36,7 +29,15 @@ export default function ClientesPage() {
         {loading ? (
           <ClientesTable.Skeleton />
         ) : (
-          <ClientesTable clientes={clientes} />
+          <ClientesTable
+            clientes={clientes}
+            action={
+              <Button onClick={() => setModalOpen(true)}>
+                <Plus className="size-4" />
+                Crear cliente
+              </Button>
+            }
+          />
         )}
       </div>
     </div>

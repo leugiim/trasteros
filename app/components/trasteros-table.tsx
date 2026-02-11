@@ -30,6 +30,7 @@ type Trastero = components["schemas"]["Trastero"]
 
 interface TrasterosTableProps {
   trasteros: Trastero[]
+  action?: React.ReactNode
 }
 
 function formatCurrency(amount: number | null | undefined) {
@@ -164,7 +165,7 @@ function TableSkeleton() {
   )
 }
 
-export function TrasterosTable({ trasteros }: TrasterosTableProps) {
+export function TrasterosTable({ trasteros, action }: TrasterosTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
 
@@ -183,19 +184,22 @@ export function TrasterosTable({ trasteros }: TrasterosTableProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <div className="relative">
-          <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
-          <Input
-            placeholder="Buscar trasteros..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-64 pl-9"
-          />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
+            <Input
+              placeholder="Buscar trasteros..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="w-64 pl-9"
+            />
+          </div>
+          <span className="text-muted-foreground text-sm">
+            {trasteros.length} trasteros
+          </span>
         </div>
-        <span className="text-muted-foreground text-sm">
-          {trasteros.length} trasteros
-        </span>
+        {action}
       </div>
 
       <div className="overflow-hidden rounded-lg border">

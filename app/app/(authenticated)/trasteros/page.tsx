@@ -27,17 +27,11 @@ function TableSkeleton() {
 }
 
 export default function TrasterosPage() {
-  const { trasteros, total, loading, error, refetch } = useTrasteros()
+  const { trasteros, loading, error, refetch } = useTrasteros()
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="flex items-center justify-end px-4 lg:px-6">
-        <Button size="sm" onClick={() => setModalOpen(true)}>
-          <Plus className="size-4" />
-          Crear trastero
-        </Button>
-      </div>
       <TrasteroFormModal
         open={modalOpen}
         onOpenChange={setModalOpen}
@@ -54,7 +48,15 @@ export default function TrasterosPage() {
         {loading ? (
           <TableSkeleton />
         ) : (
-          <TrasterosTable trasteros={trasteros} />
+          <TrasterosTable
+            trasteros={trasteros}
+            action={
+              <Button size="sm" onClick={() => setModalOpen(true)}>
+                <Plus className="size-4" />
+                Crear trastero
+              </Button>
+            }
+          />
         )}
       </div>
     </div>
