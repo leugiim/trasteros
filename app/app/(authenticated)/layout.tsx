@@ -8,6 +8,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { sessionOptions, type SessionData } from "@/lib/auth/session"
+import { PageHeaderProvider } from "@/lib/page-header-context"
 
 export default async function AuthenticatedLayout({
   children,
@@ -29,15 +30,17 @@ export default async function AuthenticatedLayout({
           } as React.CSSProperties
         }
       >
-        <AppSidebar variant="inset" />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              {children}
+        <PageHeaderProvider>
+          <AppSidebar variant="inset" />
+          <SidebarInset>
+            <SiteHeader />
+            <div className="flex flex-1 flex-col">
+              <div className="@container/main flex flex-1 flex-col gap-2">
+                {children}
+              </div>
             </div>
-          </div>
-        </SidebarInset>
+          </SidebarInset>
+        </PageHeaderProvider>
       </SidebarProvider>
   )
 }

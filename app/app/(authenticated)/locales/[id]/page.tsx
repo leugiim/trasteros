@@ -2,18 +2,27 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, MapPin, Calendar, Hash, Ruler, Plus } from "lucide-react"
+import { MapPin, Calendar, Hash, Ruler, Plus } from "lucide-react"
 import type { components } from "@/lib/api/types"
 import { fetchClient } from "@/lib/api/fetch-client"
+import { usePageHeader } from "@/lib/page-header-context"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { TrasterosTable } from "@/components/trasteros-table"
 import { TrasteroFormModal } from "@/components/trastero-form-modal"
+import { IngresosTable, type Ingreso } from "@/components/ingresos-table"
+import { GastosTable, type Gasto } from "@/components/gastos-table"
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs"
 
 interface Direccion {
   id: number
@@ -49,9 +58,12 @@ export default function LocalDetailPage() {
   const router = useRouter()
   const [local, setLocal] = useState<Local | null>(null)
   const [trasteros, setTrasteros] = useState<Trastero[]>([])
+  const [ingresos, setIngresos] = useState<Ingreso[]>([])
+  const [gastos, setGastos] = useState<Gasto[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [trasteroModalOpen, setTrasteroModalOpen] = useState(false)
+  const { setHeaderContent } = usePageHeader()
 
   const fetchData = () => {
     setLoading(true)
@@ -63,10 +75,18 @@ export default function LocalDetailPage() {
       fetchClient(`/api/locales/${id}/trasteros`).then((res) =>
         res.ok ? res.json() : { data: [] }
       ),
+      fetchClient(`/api/locales/${id}/ingresos`).then((res) =>
+        res.ok ? res.json() : { data: [] }
+      ),
+      fetchClient(`/api/locales/${id}/gastos`).then((res) =>
+        res.ok ? res.json() : { data: [] }
+      ),
     ])
-      .then(([localData, trasterosData]) => {
+      .then(([localData, trasterosData, ingresosData, gastosData]) => {
         setLocal(localData)
         setTrasteros(trasterosData.data ?? [])
+        setIngresos(ingresosData.data ?? [])
+        setGastos(gastosData.data ?? [])
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -74,19 +94,23 @@ export default function LocalDetailPage() {
 
   useEffect(() => {
     fetchData()
+    return () => setHeaderContent(null)
   }, [id])
+
+  useEffect(() => {
+    if (local) {
+      setHeaderContent(
+        <h1 className="text-base font-medium">{local.nombre}</h1>
+      )
+    }
+  }, [local])
 
   if (loading) {
     return (
       <div className="flex flex-col gap-4 px-4 py-4 md:py-6 lg:px-6">
         <div className="bg-muted h-8 w-48 animate-pulse rounded" />
-        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-          <div className="flex flex-col gap-4 md:gap-6">
-            <div className="bg-muted h-28 animate-pulse rounded-lg" />
-            <div className="bg-muted h-28 animate-pulse rounded-lg" />
-          </div>
-          <div className="bg-muted h-56 animate-pulse rounded-lg" />
-        </div>
+        <div className="bg-muted h-28 animate-pulse rounded-lg" />
+        <div className="bg-muted h-56 animate-pulse rounded-lg" />
       </div>
     )
   }
@@ -96,7 +120,6 @@ export default function LocalDetailPage() {
       <div className="flex flex-col items-center gap-4 px-4 py-12 lg:px-6">
         <p className="text-muted-foreground">{error ?? "Local no encontrado"}</p>
         <Button variant="outline" onClick={() => router.push("/locales")}>
-          <ArrowLeft className="size-4" />
           Volver a locales
         </Button>
       </div>
@@ -107,54 +130,82 @@ export default function LocalDetailPage() {
 
   return (
     <div className="flex flex-col gap-4 px-4 py-4 md:gap-6 md:py-6 lg:px-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon-sm" onClick={() => router.push("/locales")}>
-          <ArrowLeft className="size-4" />
-          <span className="sr-only">Volver</span>
-        </Button>
-        <h2 className="text-xl font-semibold">{local.nombre}</h2>
-      </div>
+      {/* Info card */}
+      <Card>
+        <div className="grid grid-cols-3 gap-x-6 gap-y-3 p-5">
+          <InfoField icon={MapPin} label="Dirección" value={dir.direccionCompleta} />
+          <InfoField icon={Ruler} label="Superficie" value={local.superficieTotal ? `${local.superficieTotal} m²` : null} />
+          <InfoField icon={Hash} label="Nº trasteros" value={local.numeroTrasteros != null ? String(local.numeroTrasteros) : null} />
+          <InfoField icon={Calendar} label="Fecha compra" value={formatDate(local.fechaCompra)} />
+          <InfoField label="Precio compra" value={formatCurrency(local.precioCompra)} />
+          <InfoField label="Ref. catastral" value={local.referenciaCatastral} />
+          <InfoField label="Valor catastral" value={formatCurrency(local.valorCatastral)} />
+          <InfoField label="C.P." value={dir.codigoPostal} />
+          <InfoField label="Ciudad" value={`${dir.ciudad}, ${dir.provincia}`} />
+        </div>
+      </Card>
 
-      <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-        {/* Left column: Info + Dirección in one card */}
-        <Card>
-          <div className="grid grid-cols-3 gap-x-6 gap-y-3 p-5">
-            <InfoField icon={MapPin} label="Dirección" value={dir.direccionCompleta} />
-            <InfoField icon={Ruler} label="Superficie" value={local.superficieTotal ? `${local.superficieTotal} m²` : null} />
-            <InfoField icon={Hash} label="Nº trasteros" value={local.numeroTrasteros != null ? String(local.numeroTrasteros) : null} />
-            <InfoField icon={Calendar} label="Fecha compra" value={formatDate(local.fechaCompra)} />
-            <InfoField label="Precio compra" value={formatCurrency(local.precioCompra)} />
-            <InfoField label="Ref. catastral" value={local.referenciaCatastral} />
-            <InfoField label="Valor catastral" value={formatCurrency(local.valorCatastral)} />
-            <InfoField label="C.P." value={dir.codigoPostal} />
-            <InfoField label="Ciudad" value={`${dir.ciudad}, ${dir.provincia}`} />
-          </div>
-        </Card>
+      {/* Tabs */}
+      <Tabs defaultValue="trasteros">
+        <TabsList variant="line">
+          <TabsTrigger value="trasteros">Trasteros</TabsTrigger>
+          <TabsTrigger value="finanzas">Finanzas</TabsTrigger>
+        </TabsList>
 
-        {/* Right column: Trasteros */}
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-lg">Trasteros</CardTitle>
-            <Button size="sm" onClick={() => setTrasteroModalOpen(true)}>
-              <Plus className="size-4" />
-              Crear trastero
-            </Button>
-          </CardHeader>
-          <div className="px-6 pb-6">
-            <TrasteroFormModal
-              open={trasteroModalOpen}
-              onOpenChange={setTrasteroModalOpen}
-              defaultLocalId={local.id}
-              defaultLocalNombre={local.nombre}
-              onSuccess={fetchData}
-            />
-            <TrasterosTable
-              trasteros={trasteros}
-              showSearch={false}
-            />
+        <TabsContent value="trasteros">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle className="text-lg">Trasteros</CardTitle>
+              <Button size="sm" onClick={() => setTrasteroModalOpen(true)}>
+                <Plus className="size-4" />
+                Crear trastero
+              </Button>
+            </CardHeader>
+            <div className="px-6 pb-6">
+              <TrasteroFormModal
+                open={trasteroModalOpen}
+                onOpenChange={setTrasteroModalOpen}
+                defaultLocalId={local.id}
+                defaultLocalNombre={local.nombre}
+                onSuccess={fetchData}
+              />
+              <TrasterosTable
+                trasteros={trasteros}
+                showSearch={false}
+              />
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="finanzas">
+          <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Ingresos</CardTitle>
+              </CardHeader>
+              <div className="px-6 pb-6">
+                <IngresosTable
+                  ingresos={ingresos}
+                  contratoTrasteroMap={new Map()}
+                  showSearch={false}
+                />
+              </div>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Gastos</CardTitle>
+              </CardHeader>
+              <div className="px-6 pb-6">
+                <GastosTable
+                  gastos={gastos}
+                  showSearch={false}
+                />
+              </div>
+            </Card>
           </div>
-        </Card>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

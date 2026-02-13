@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Mail, Phone, IdCard, Calendar, Plus, Pencil } from "lucide-react"
+import { Mail, Phone, IdCard, Calendar, Plus, Pencil } from "lucide-react"
 import type { components } from "@/lib/api/types"
 import { fetchClient } from "@/lib/api/fetch-client"
+import { usePageHeader } from "@/lib/page-header-context"
+import { Badge } from "@/components/ui/badge"
 import { ClienteFormModal } from "@/components/cliente-form-modal"
 import { ContratoFormModal, type ContratoData } from "@/components/contrato-form-modal"
 import { IngresoFormModal } from "@/components/ingreso-form-modal"
 import { ContratosTable, type ContratoWithRelations } from "@/components/contratos-table"
 import { IngresosTable, type Ingreso } from "@/components/ingresos-table"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -33,6 +34,7 @@ export default function ClienteDetailPage() {
   const [editingContrato, setEditingContrato] = useState<ContratoData | null>(null)
   const [ingresoModalOpen, setIngresoModalOpen] = useState(false)
   const [editingCliente, setEditingCliente] = useState(false)
+  const { setHeaderContent } = usePageHeader()
 
   const fetchData = () => {
     setLoading(true)
@@ -59,7 +61,23 @@ export default function ClienteDetailPage() {
 
   useEffect(() => {
     fetchData()
+    return () => setHeaderContent(null)
   }, [id])
+
+  useEffect(() => {
+    if (cliente) {
+      setHeaderContent(
+        <div className="flex items-center gap-2">
+          <h1 className="text-base font-medium">
+            {cliente.nombre} {cliente.apellidos}
+          </h1>
+          <Badge variant={cliente.activo ? "default" : "secondary"} className="text-[10px]">
+            {cliente.activo ? "Activo" : "Inactivo"}
+          </Badge>
+        </div>
+      )
+    }
+  }, [cliente])
 
   // Map contratoId -> trastero numero for the ingresos table
   const contratoTrasteroMap = new Map(
@@ -86,7 +104,6 @@ export default function ClienteDetailPage() {
       <div className="flex flex-col items-center gap-4 px-4 py-12 lg:px-6">
         <p className="text-muted-foreground">{error ?? "Cliente no encontrado"}</p>
         <Button variant="outline" onClick={() => router.push("/clientes")}>
-          <ArrowLeft className="size-4" />
           Volver a clientes
         </Button>
       </div>
@@ -95,21 +112,6 @@ export default function ClienteDetailPage() {
 
   return (
     <div className="flex flex-col gap-4 px-4 py-4 md:gap-6 md:py-6 lg:px-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon-sm" onClick={() => router.push("/clientes")}>
-          <ArrowLeft className="size-4" />
-          <span className="sr-only">Volver</span>
-        </Button>
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold">
-            {cliente.nombre} {cliente.apellidos}
-          </h2>
-          <Badge variant={cliente.activo ? "default" : "secondary"}>
-            {cliente.activo ? "Activo" : "Inactivo"}
-          </Badge>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
         {/* Left column: Info + Contratos */}
         <div className="flex flex-col gap-4 md:gap-6">
