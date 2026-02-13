@@ -31,6 +31,7 @@ type Local = components["schemas"]["Local"]
 interface LocalesTableProps {
   locales: Local[]
   action?: React.ReactNode
+  showSearch?: boolean
 }
 
 function formatCurrency(amount: number | null | undefined) {
@@ -150,7 +151,7 @@ function TableSkeleton() {
   )
 }
 
-export function LocalesTable({ locales, action }: LocalesTableProps) {
+export function LocalesTable({ locales, action, showSearch = true }: LocalesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
 
@@ -169,23 +170,27 @@ export function LocalesTable({ locales, action }: LocalesTableProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
-            <Input
-              placeholder="Buscar locales..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="w-64 pl-9"
-            />
-          </div>
-          <span className="text-muted-foreground text-sm">
-            {locales.length} locales
-          </span>
+      {(showSearch || action) && (
+        <div className="flex items-center justify-between">
+          {showSearch ? (
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
+                <Input
+                  placeholder="Buscar locales..."
+                  value={globalFilter}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  className="w-64 pl-9"
+                />
+              </div>
+              <span className="text-muted-foreground text-sm">
+                {locales.length} locales
+              </span>
+            </div>
+          ) : <div />}
+          {action}
         </div>
-        {action}
-      </div>
+      )}
 
       <div className="overflow-hidden rounded-lg border">
         <Table>

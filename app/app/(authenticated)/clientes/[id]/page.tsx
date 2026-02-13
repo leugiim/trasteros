@@ -8,8 +8,8 @@ import { fetchClient } from "@/lib/api/fetch-client"
 import { ClienteFormModal } from "@/components/cliente-form-modal"
 import { ContratoFormModal, type ContratoData } from "@/components/contrato-form-modal"
 import { IngresoFormModal } from "@/components/ingreso-form-modal"
-import { ContratosTable } from "@/components/contratos-table"
-import { IngresosTable } from "@/components/ingresos-table"
+import { ContratosTable, type ContratoWithRelations } from "@/components/contratos-table"
+import { IngresosTable, type Ingreso } from "@/components/ingresos-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,30 +20,6 @@ import {
 import { formatDate } from "@/lib/format"
 
 type Cliente = components["schemas"]["Cliente"]
-
-interface ContratoWithRelations {
-  id?: number
-  trastero?: { id: number; numero: string; local?: { id: number; nombre: string } }
-  cliente?: { id: number; nombre: string }
-  fechaInicio?: string
-  fechaFin?: string | null
-  precioMensual?: number
-  fianza?: number
-  fianzaPagada?: boolean
-  estado?: string
-  createdAt?: string
-  updatedAt?: string
-}
-
-interface Ingreso {
-  id: number
-  contratoId: number
-  concepto: string
-  importe: number
-  fechaPago: string
-  metodoPago?: string | null
-  categoria: string
-}
 
 export default function ClienteDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -172,39 +148,30 @@ export default function ClienteDetailPage() {
           />
 
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">
-                  Contratos
-                  {contratos.length > 0 && (
-                    <Badge variant="outline" className="ml-2 text-xs font-normal">
-                      {contratos.length}
-                    </Badge>
-                  )}
-                </CardTitle>
-                <Button size="sm" onClick={() => setContratoModalOpen(true)}>
-                  <Plus className="size-4" />
-                  Crear contrato
-                </Button>
-              </div>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle className="text-lg">Contratos</CardTitle>
+              <Button size="sm" onClick={() => setContratoModalOpen(true)}>
+                <Plus className="size-4" />
+                Crear contrato
+              </Button>
             </CardHeader>
-
-            <ContratoFormModal
-              open={contratoModalOpen}
-              onOpenChange={setContratoModalOpen}
-              clienteId={cliente.id!}
-              onSuccess={fetchData}
-            />
-            <ContratoFormModal
-              open={!!editingContrato}
-              onOpenChange={(open) => { if (!open) setEditingContrato(null) }}
-              clienteId={cliente.id!}
-              contrato={editingContrato}
-              onSuccess={fetchData}
-            />
             <div className="px-6 pb-6">
+              <ContratoFormModal
+                open={contratoModalOpen}
+                onOpenChange={setContratoModalOpen}
+                clienteId={cliente.id!}
+                onSuccess={fetchData}
+              />
+              <ContratoFormModal
+                open={!!editingContrato}
+                onOpenChange={(open) => { if (!open) setEditingContrato(null) }}
+                clienteId={cliente.id!}
+                contrato={editingContrato}
+                onSuccess={fetchData}
+              />
               <ContratosTable
                 contratos={contratos}
+                showSearch={false}
                 onEdit={(c) => setEditingContrato({
                   id: c.id!,
                   trastero: c.trastero,
@@ -222,35 +189,27 @@ export default function ClienteDetailPage() {
 
         {/* Right column: Ingresos */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">
-                Ingresos
-                {ingresos.length > 0 && (
-                  <Badge variant="outline" className="ml-2 text-xs font-normal">
-                    {ingresos.length}
-                  </Badge>
-                )}
-              </CardTitle>
-              <Button size="sm" onClick={() => setIngresoModalOpen(true)}>
-                <Plus className="size-4" />
-                Crear ingreso
-              </Button>
-            </div>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-lg">Ingresos</CardTitle>
+            <Button size="sm" onClick={() => setIngresoModalOpen(true)}>
+              <Plus className="size-4" />
+              Crear ingreso
+            </Button>
           </CardHeader>
-          <IngresoFormModal
-            open={ingresoModalOpen}
-            onOpenChange={setIngresoModalOpen}
-            contratos={contratos.map((c) => ({
-              id: c.id!,
-              trasteroNumero: c.trastero?.numero ?? `#${c.id}`,
-            }))}
-            onSuccess={fetchData}
-          />
           <div className="px-6 pb-6">
+            <IngresoFormModal
+              open={ingresoModalOpen}
+              onOpenChange={setIngresoModalOpen}
+              contratos={contratos.map((c) => ({
+                id: c.id!,
+                trasteroNumero: c.trastero?.numero ?? `#${c.id}`,
+              }))}
+              onSuccess={fetchData}
+            />
             <IngresosTable
               ingresos={ingresos}
               contratoTrasteroMap={contratoTrasteroMap}
+              showSearch={false}
             />
           </div>
         </Card>

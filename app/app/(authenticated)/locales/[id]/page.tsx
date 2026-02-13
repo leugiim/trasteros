@@ -8,7 +8,6 @@ import { fetchClient } from "@/lib/api/fetch-client"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { TrasterosTable } from "@/components/trasteros-table"
 import { TrasteroFormModal } from "@/components/trastero-form-modal"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -135,29 +134,25 @@ export default function LocalDetailPage() {
         {/* Right column: Trasteros */}
         <Card>
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-lg">
-              Trasteros
-              {trasteros.length > 0 && (
-                <Badge variant="outline" className="ml-2 text-xs font-normal">
-                  {trasteros.length}
-                </Badge>
-              )}
-            </CardTitle>
+            <CardTitle className="text-lg">Trasteros</CardTitle>
             <Button size="sm" onClick={() => setTrasteroModalOpen(true)}>
               <Plus className="size-4" />
               Crear trastero
             </Button>
           </CardHeader>
           <div className="px-6 pb-6">
-            <TrasterosTable trasteros={trasteros} />
+            <TrasteroFormModal
+              open={trasteroModalOpen}
+              onOpenChange={setTrasteroModalOpen}
+              defaultLocalId={local.id}
+              defaultLocalNombre={local.nombre}
+              onSuccess={fetchData}
+            />
+            <TrasterosTable
+              trasteros={trasteros}
+              showSearch={false}
+            />
           </div>
-          <TrasteroFormModal
-            open={trasteroModalOpen}
-            onOpenChange={setTrasteroModalOpen}
-            defaultLocalId={local.id}
-            defaultLocalNombre={local.nombre}
-            onSuccess={fetchData}
-          />
         </Card>
       </div>
     </div>
