@@ -7,17 +7,13 @@ import type { components } from "@/lib/api/types"
 import { fetchClient } from "@/lib/api/fetch-client"
 import { usePageHeader } from "@/lib/page-header-context"
 import { Badge } from "@/components/ui/badge"
-import { ClienteFormModal } from "@/components/cliente-form-modal"
-import { ContratoFormModal, type ContratoData } from "@/components/contrato-form-modal"
-import { IngresoFormModal } from "@/components/ingreso-form-modal"
-import { ContratosTable, type ContratoWithRelations } from "@/components/contratos-table"
-import { IngresosTable, type Ingreso } from "@/components/ingresos-table"
+import { ClienteFormModal } from "@/components/data-tables/clientes/cliente-form-modal"
+import { ContratoFormModal, type ContratoData } from "@/components/data-tables/contratos/contrato-form-modal"
+import { IngresoFormModal } from "@/components/data-tables/ingresos/ingreso-form-modal"
+import { ContratosTable, type ContratoWithRelations } from "@/components/data-tables/contratos/contratos-table"
+import { IngresosTable, type Ingreso } from "@/components/data-tables/ingresos/ingresos-table"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { formatDate } from "@/lib/format"
 
 type Cliente = components["schemas"]["Cliente"]
@@ -149,72 +145,66 @@ export default function ClienteDetailPage() {
             onSuccess={fetchData}
           />
 
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="text-lg">Contratos</CardTitle>
+          <ContratoFormModal
+            open={contratoModalOpen}
+            onOpenChange={setContratoModalOpen}
+            clienteId={cliente.id!}
+            onSuccess={fetchData}
+          />
+          <ContratoFormModal
+            open={!!editingContrato}
+            onOpenChange={(open) => { if (!open) setEditingContrato(null) }}
+            clienteId={cliente.id!}
+            contrato={editingContrato}
+            onSuccess={fetchData}
+          />
+          <ContratosTable
+            contratos={contratos}
+            title="Contratos"
+            showSearch={false}
+            action={
               <Button size="sm" onClick={() => setContratoModalOpen(true)}>
                 <Plus className="size-4" />
                 Crear contrato
               </Button>
-            </CardHeader>
-            <div className="px-6 pb-6">
-              <ContratoFormModal
-                open={contratoModalOpen}
-                onOpenChange={setContratoModalOpen}
-                clienteId={cliente.id!}
-                onSuccess={fetchData}
-              />
-              <ContratoFormModal
-                open={!!editingContrato}
-                onOpenChange={(open) => { if (!open) setEditingContrato(null) }}
-                clienteId={cliente.id!}
-                contrato={editingContrato}
-                onSuccess={fetchData}
-              />
-              <ContratosTable
-                contratos={contratos}
-                showSearch={false}
-                onEdit={(c) => setEditingContrato({
-                  id: c.id!,
-                  trastero: c.trastero,
-                  clienteId: cliente!.id!,
-                  fechaInicio: c.fechaInicio,
-                  fechaFin: c.fechaFin,
-                  precioMensual: c.precioMensual,
-                  fianza: c.fianza,
-                  fianzaPagada: c.fianzaPagada,
-                })}
-              />
-            </div>
-          </Card>
+            }
+            onEdit={(c) => setEditingContrato({
+              id: c.id!,
+              trastero: c.trastero,
+              clienteId: cliente!.id!,
+              fechaInicio: c.fechaInicio,
+              fechaFin: c.fechaFin,
+              precioMensual: c.precioMensual,
+              fianza: c.fianza,
+              fianzaPagada: c.fianzaPagada,
+            })}
+          />
         </div>
 
         {/* Right column: Ingresos */}
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-lg">Ingresos</CardTitle>
-            <Button size="sm" onClick={() => setIngresoModalOpen(true)}>
-              <Plus className="size-4" />
-              Crear ingreso
-            </Button>
-          </CardHeader>
-          <div className="px-6 pb-6">
-            <IngresoFormModal
-              open={ingresoModalOpen}
-              onOpenChange={setIngresoModalOpen}
-              contratos={contratos.map((c) => ({
-                id: c.id!,
-                trasteroNumero: c.trastero?.numero ?? `#${c.id}`,
-              }))}
-              onSuccess={fetchData}
-            />
-            <IngresosTable
-              ingresos={ingresos}
-              contratoTrasteroMap={contratoTrasteroMap}
-              showSearch={false}
-            />
-          </div>
-        </Card>
+        <div>
+          <IngresoFormModal
+            open={ingresoModalOpen}
+            onOpenChange={setIngresoModalOpen}
+            contratos={contratos.map((c) => ({
+              id: c.id!,
+              trasteroNumero: c.trastero?.numero ?? `#${c.id}`,
+            }))}
+            onSuccess={fetchData}
+          />
+          <IngresosTable
+            ingresos={ingresos}
+            contratoTrasteroMap={contratoTrasteroMap}
+            title="Ingresos"
+            showSearch={false}
+            action={
+              <Button size="sm" onClick={() => setIngresoModalOpen(true)}>
+                <Plus className="size-4" />
+                Crear ingreso
+              </Button>
+            }
+          />
+        </div>
       </div>
     </div>
   )

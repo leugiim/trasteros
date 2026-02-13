@@ -1,4 +1,4 @@
-// components/ingresos-table.tsx
+// components/data-tables/gastos/gastos-table.tsx
 "use client"
 
 import { useState } from "react"
@@ -16,6 +16,7 @@ import { ArrowUpDown, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -26,27 +27,30 @@ import {
 } from "@/components/ui/table"
 import { formatCurrency, formatDate } from "@/lib/format"
 
-export interface Ingreso {
+export interface Gasto {
   id: number
-  contratoId: number
+  localId: number
   concepto: string
   importe: number
-  fechaPago: string
-  metodoPago?: string | null
+  fecha: string
   categoria: string
+  descripcion?: string | null
+  metodoPago?: string | null
 }
 
-interface IngresosTableProps {
-  ingresos: Ingreso[]
-  contratoTrasteroMap: Map<number | undefined, string>
+interface GastosTableProps {
+  gastos: Gasto[]
+  title?: string
   action?: React.ReactNode
   showSearch?: boolean
 }
 
 const categoriaLabel: Record<string, string> = {
-  mensualidad: "Mensualidad",
-  fianza: "Fianza",
-  penalizacion: "Penalización",
+  suministros: "Suministros",
+  mantenimiento: "Mantenimiento",
+  seguros: "Seguros",
+  impuestos: "Impuestos",
+  comunidad: "Comunidad",
   otros: "Otros",
 }
 
@@ -57,84 +61,72 @@ const metodoPagoLabel: Record<string, string> = {
   bizum: "Bizum",
 }
 
-function getColumns(contratoTrasteroMap: Map<number | undefined, string>): ColumnDef<Ingreso>[] {
-  return [
-    {
-      accessorKey: "fechaPago",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Fecha
-          <ArrowUpDown className="ml-1 size-3.5" />
-        </Button>
-      ),
-      cell: ({ row }) => formatDate(row.original.fechaPago),
-    },
-    {
-      accessorKey: "concepto",
-      header: "Concepto",
-      cell: ({ row }) => (
-        <span className="max-w-37.5 truncate">{row.original.concepto}</span>
-      ),
-    },
-    {
-      accessorKey: "importe",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Importe
-          <ArrowUpDown className="ml-1 size-3.5" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <span className="tabular-nums font-medium">{formatCurrency(row.original.importe)}</span>
-      ),
-    },
-    {
-      accessorKey: "categoria",
-      header: "Categoría",
-      cell: ({ row }) => (
-        <Badge variant="outline" className="text-[10px]">
-          {categoriaLabel[row.original.categoria] ?? row.original.categoria}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: "metodoPago",
-      header: "Método",
-      cell: ({ row }) => (
-        <span className="text-muted-foreground text-xs">
-          {row.original.metodoPago ? (metodoPagoLabel[row.original.metodoPago] ?? row.original.metodoPago) : "-"}
-        </span>
-      ),
-    },
-    {
-      id: "trastero",
-      header: "Trastero",
-      cell: ({ row }) => (
-        <span className="text-muted-foreground text-xs">
-          {contratoTrasteroMap.get(row.original.contratoId) ?? "-"}
-        </span>
-      ),
-    },
-  ]
-}
+const columns: ColumnDef<Gasto>[] = [
+  {
+    accessorKey: "fecha",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-3"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Fecha
+        <ArrowUpDown className="ml-1 size-3.5" />
+      </Button>
+    ),
+    cell: ({ row }) => formatDate(row.original.fecha),
+  },
+  {
+    accessorKey: "concepto",
+    header: "Concepto",
+    cell: ({ row }) => (
+      <span className="max-w-37.5 truncate">{row.original.concepto}</span>
+    ),
+  },
+  {
+    accessorKey: "importe",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-3"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Importe
+        <ArrowUpDown className="ml-1 size-3.5" />
+      </Button>
+    ),
+    cell: ({ row }) => (
+      <span className="tabular-nums font-medium">{formatCurrency(row.original.importe)}</span>
+    ),
+  },
+  {
+    accessorKey: "categoria",
+    header: "Categoría",
+    cell: ({ row }) => (
+      <Badge variant="outline" className="text-[10px]">
+        {categoriaLabel[row.original.categoria] ?? row.original.categoria}
+      </Badge>
+    ),
+  },
+  {
+    accessorKey: "metodoPago",
+    header: "Método",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground text-xs">
+        {row.original.metodoPago ? (metodoPagoLabel[row.original.metodoPago] ?? row.original.metodoPago) : "-"}
+      </span>
+    ),
+  },
+]
 
-export function IngresosTable({ ingresos, contratoTrasteroMap, action, showSearch = true }: IngresosTableProps) {
+export function GastosTable({ gastos, title, action, showSearch = true }: GastosTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
-  const [columns] = useState(() => getColumns(contratoTrasteroMap))
 
   const table = useReactTable({
-    data: ingresos,
+    data: gastos,
     columns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
@@ -147,26 +139,37 @@ export function IngresosTable({ ingresos, contratoTrasteroMap, action, showSearc
   })
 
   return (
+    <Card className="p-6">
     <div className="flex flex-col gap-4">
-      {(showSearch || action) && (
-        <div className="flex items-center justify-between">
-          {showSearch ? (
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
-                <Input
-                  placeholder="Buscar ingresos..."
-                  value={globalFilter}
-                  onChange={(e) => setGlobalFilter(e.target.value)}
-                  className="w-64 pl-9"
-                />
-              </div>
-              <span className="text-muted-foreground text-sm">
-                {ingresos.length} ingresos
-              </span>
+      {(title || showSearch || action) && (
+        <div className="flex flex-col gap-4">
+          {title && (
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">{title}</h3>
+              {action}
             </div>
-          ) : <div />}
-          {action}
+          )}
+          {(showSearch || (!title && action)) && (
+            <div className="flex items-center justify-between">
+              {showSearch ? (
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
+                    <Input
+                      placeholder="Buscar gastos..."
+                      value={globalFilter}
+                      onChange={(e) => setGlobalFilter(e.target.value)}
+                      className="w-64 pl-9"
+                    />
+                  </div>
+                  <span className="text-muted-foreground text-sm">
+                    {gastos.length} gastos
+                  </span>
+                </div>
+              ) : <div />}
+              {!title && action}
+            </div>
+          )}
         </div>
       )}
 
@@ -208,7 +211,7 @@ export function IngresosTable({ ingresos, contratoTrasteroMap, action, showSearc
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No se encontraron ingresos.
+                  No se encontraron gastos.
                 </TableCell>
               </TableRow>
             )}
@@ -243,5 +246,6 @@ export function IngresosTable({ ingresos, contratoTrasteroMap, action, showSearc
         </div>
       )}
     </div>
+    </Card>
   )
 }

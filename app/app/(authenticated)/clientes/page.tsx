@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 import { useClientes } from "@/hooks/use-clientes"
-import { ClienteFormModal } from "@/components/cliente-form-modal"
-import { ClientesTable } from "@/components/clientes-table"
+import { ClienteFormModal } from "@/components/data-tables/clientes/cliente-form-modal"
+import { ClientesTable } from "@/components/data-tables/clientes/clientes-table"
 import { Button } from "@/components/ui/button"
 
 export default function ClientesPage() {

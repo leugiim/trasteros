@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 import { useLocales } from "@/hooks/use-locales"
-import { LocalFormModal } from "@/components/local-form-modal"
-import { LocalesTable } from "@/components/locales-table"
+import { LocalFormModal } from "@/components/data-tables/locales/local-form-modal"
+import { LocalesTable } from "@/components/data-tables/locales/locales-table"
 import { Button } from "@/components/ui/button"
 
 function TableSkeleton() {

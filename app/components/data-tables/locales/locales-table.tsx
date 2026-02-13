@@ -1,4 +1,4 @@
-// components/trasteros-table.tsx
+// components/data-tables/locales/locales-table.tsx
 "use client"
 
 import { useState } from "react"
@@ -12,11 +12,12 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search } from "lucide-react"
+import { ArrowUpDown, Eye, Search } from "lucide-react"
+import Link from "next/link"
 import type { components } from "@/lib/api/types"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -26,10 +27,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-type Trastero = components["schemas"]["Trastero"]
+type Local = components["schemas"]["Local"]
 
-interface TrasterosTableProps {
-  trasteros: Trastero[]
+interface LocalesTableProps {
+  locales: Local[]
+  title?: string
   action?: React.ReactNode
   showSearch?: boolean
 }
@@ -44,21 +46,7 @@ function formatCurrency(amount: number | null | undefined) {
   }).format(amount)
 }
 
-const estadoVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  disponible: "default",
-  ocupado: "secondary",
-  reservado: "outline",
-  mantenimiento: "destructive",
-}
-
-const estadoLabel: Record<string, string> = {
-  disponible: "Disponible",
-  ocupado: "Ocupado",
-  reservado: "Reservado",
-  mantenimiento: "Mantenimiento",
-}
-
-const columns: ColumnDef<Trastero>[] = [
+const columns: ColumnDef<Local>[] = [
   {
     accessorKey: "id",
     header: "ID",
@@ -67,7 +55,7 @@ const columns: ColumnDef<Trastero>[] = [
     ),
   },
   {
-    accessorKey: "numero",
+    accessorKey: "nombre",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -75,32 +63,16 @@ const columns: ColumnDef<Trastero>[] = [
         className="-ml-3"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Número
+        Nombre
         <ArrowUpDown className="ml-1 size-3.5" />
       </Button>
     ),
     cell: ({ row }) => (
-      <span className="font-medium">{row.original.numero}</span>
+      <span className="font-medium">{row.original.nombre}</span>
     ),
   },
   {
-    accessorKey: "nombre",
-    header: "Nombre",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {row.original.nombre ?? "-"}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "localId",
-    header: "Local ID",
-    cell: ({ row }) => (
-      <span className="tabular-nums">{row.original.localId}</span>
-    ),
-  },
-  {
-    accessorKey: "superficie",
+    accessorKey: "superficieTotal",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -112,38 +84,53 @@ const columns: ColumnDef<Trastero>[] = [
         <ArrowUpDown className="ml-1 size-3.5" />
       </Button>
     ),
-    cell: ({ row }) => <span>{row.original.superficie} m²</span>,
+    cell: ({ row }) => <span>{row.original.superficieTotal} m²</span>,
   },
   {
-    accessorKey: "precioMensual",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="-ml-3"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Precio/mes
-        <ArrowUpDown className="ml-1 size-3.5" />
-      </Button>
+    accessorKey: "numeroTrasteros",
+    header: "Trasteros",
+    cell: ({ row }) => (
+      <span className="tabular-nums">{row.original.numeroTrasteros}</span>
     ),
+  },
+  {
+    accessorKey: "fechaCompra",
+    header: "Fecha compra",
+    cell: ({ row }) => {
+      const fecha = row.original.fechaCompra
+      if (!fecha) return <span className="text-muted-foreground">-</span>
+      return new Date(fecha).toLocaleDateString("es-ES")
+    },
+  },
+  {
+    accessorKey: "precioCompra",
+    header: "Precio compra",
     cell: ({ row }) => (
       <span className="tabular-nums">
-        {formatCurrency(row.original.precioMensual)}
+        {formatCurrency(row.original.precioCompra)}
       </span>
     ),
   },
   {
-    accessorKey: "estado",
-    header: "Estado",
-    cell: ({ row }) => {
-      const estado = row.original.estado ?? ""
-      return (
-        <Badge variant={estadoVariant[estado] ?? "outline"}>
-          {estadoLabel[estado] ?? estado}
-        </Badge>
-      )
-    },
+    accessorKey: "referenciaCatastral",
+    header: "Ref. catastral",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">
+        {row.original.referenciaCatastral ?? "-"}
+      </span>
+    ),
+  },
+  {
+    id: "actions",
+    header: "",
+    cell: ({ row }) => (
+      <Button variant="ghost" size="icon-sm" asChild>
+        <Link href={`/locales/${row.original.id}`}>
+          <Eye className="size-4" />
+          <span className="sr-only">Ver local</span>
+        </Link>
+      </Button>
+    ),
   },
 ]
 
@@ -154,24 +141,24 @@ function TableSkeleton() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4 border-t px-4 py-3">
           <div className="bg-muted h-4 w-8 animate-pulse rounded" />
+          <div className="bg-muted h-4 w-36 animate-pulse rounded" />
+          <div className="bg-muted h-4 w-20 animate-pulse rounded" />
           <div className="bg-muted h-4 w-16 animate-pulse rounded" />
-          <div className="bg-muted h-4 w-32 animate-pulse rounded" />
-          <div className="bg-muted h-4 w-12 animate-pulse rounded" />
-          <div className="bg-muted h-4 w-20 animate-pulse rounded" />
-          <div className="bg-muted h-4 w-20 animate-pulse rounded" />
           <div className="bg-muted h-4 w-24 animate-pulse rounded" />
+          <div className="bg-muted h-4 w-24 animate-pulse rounded" />
+          <div className="bg-muted h-4 w-32 animate-pulse rounded" />
         </div>
       ))}
     </div>
   )
 }
 
-export function TrasterosTable({ trasteros, action, showSearch = true }: TrasterosTableProps) {
+export function LocalesTable({ locales, title, action, showSearch = true }: LocalesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
 
   const table = useReactTable({
-    data: trasteros,
+    data: locales,
     columns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
@@ -184,26 +171,37 @@ export function TrasterosTable({ trasteros, action, showSearch = true }: Traster
   })
 
   return (
+    <Card className="p-6">
     <div className="flex flex-col gap-4">
-      {(showSearch || action) && (
-        <div className="flex items-center justify-between">
-          {showSearch ? (
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
-                <Input
-                  placeholder="Buscar trasteros..."
-                  value={globalFilter}
-                  onChange={(e) => setGlobalFilter(e.target.value)}
-                  className="w-64 pl-9"
-                />
-              </div>
-              <span className="text-muted-foreground text-sm">
-                {trasteros.length} trasteros
-              </span>
+      {(title || showSearch || action) && (
+        <div className="flex flex-col gap-4">
+          {title && (
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">{title}</h3>
+              {action}
             </div>
-          ) : <div />}
-          {action}
+          )}
+          {(showSearch || (!title && action)) && (
+            <div className="flex items-center justify-between">
+              {showSearch ? (
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
+                    <Input
+                      placeholder="Buscar locales..."
+                      value={globalFilter}
+                      onChange={(e) => setGlobalFilter(e.target.value)}
+                      className="w-64 pl-9"
+                    />
+                  </div>
+                  <span className="text-muted-foreground text-sm">
+                    {locales.length} locales
+                  </span>
+                </div>
+              ) : <div />}
+              {!title && action}
+            </div>
+          )}
         </div>
       )}
 
@@ -245,7 +243,7 @@ export function TrasterosTable({ trasteros, action, showSearch = true }: Traster
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No se encontraron trasteros.
+                  No se encontraron locales.
                 </TableCell>
               </TableRow>
             )}
@@ -253,30 +251,35 @@ export function TrasterosTable({ trasteros, action, showSearch = true }: Traster
         </Table>
       </div>
 
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground text-sm">
-          Página {table.getState().pagination.pageIndex + 1} de{" "}
-          {table.getPageCount()}
-        </span>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Siguiente
-          </Button>
+      {table.getPageCount() > 1 && (
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-sm">
+            Página {table.getState().pagination.pageIndex + 1} de{" "}
+            {table.getPageCount()}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Siguiente
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
+    </Card>
   )
 }
+
+LocalesTable.Skeleton = TableSkeleton

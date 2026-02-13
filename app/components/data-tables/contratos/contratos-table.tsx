@@ -1,4 +1,4 @@
-// components/contratos-table.tsx
+// components/data-tables/contratos/contratos-table.tsx
 "use client"
 
 import { useState } from "react"
@@ -16,6 +16,7 @@ import { ArrowUpDown, Pencil, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -42,6 +43,7 @@ export interface ContratoWithRelations {
 
 interface ContratosTableProps {
   contratos: ContratoWithRelations[]
+  title?: string
   onEdit?: (contrato: ContratoWithRelations) => void
   action?: React.ReactNode
   showSearch?: boolean
@@ -148,7 +150,7 @@ function getColumns(onEdit?: (contrato: ContratoWithRelations) => void): ColumnD
   return cols
 }
 
-export function ContratosTable({ contratos, onEdit, action, showSearch = true }: ContratosTableProps) {
+export function ContratosTable({ contratos, title, onEdit, action, showSearch = true }: ContratosTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
   const [columns] = useState(() => getColumns(onEdit))
@@ -167,26 +169,37 @@ export function ContratosTable({ contratos, onEdit, action, showSearch = true }:
   })
 
   return (
+    <Card className="p-6">
     <div className="flex flex-col gap-4">
-      {(showSearch || action) && (
-        <div className="flex items-center justify-between">
-          {showSearch ? (
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
-                <Input
-                  placeholder="Buscar contratos..."
-                  value={globalFilter}
-                  onChange={(e) => setGlobalFilter(e.target.value)}
-                  className="w-64 pl-9"
-                />
-              </div>
-              <span className="text-muted-foreground text-sm">
-                {contratos.length} contratos
-              </span>
+      {(title || showSearch || action) && (
+        <div className="flex flex-col gap-4">
+          {title && (
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">{title}</h3>
+              {action}
             </div>
-          ) : <div />}
-          {action}
+          )}
+          {(showSearch || (!title && action)) && (
+            <div className="flex items-center justify-between">
+              {showSearch ? (
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
+                    <Input
+                      placeholder="Buscar contratos..."
+                      value={globalFilter}
+                      onChange={(e) => setGlobalFilter(e.target.value)}
+                      className="w-64 pl-9"
+                    />
+                  </div>
+                  <span className="text-muted-foreground text-sm">
+                    {contratos.length} contratos
+                  </span>
+                </div>
+              ) : <div />}
+              {!title && action}
+            </div>
+          )}
         </div>
       )}
 
@@ -263,5 +276,6 @@ export function ContratosTable({ contratos, onEdit, action, showSearch = true }:
         </div>
       )}
     </div>
+    </Card>
   )
 }

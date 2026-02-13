@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 import { useTrasteros } from "@/hooks/use-trasteros"
-import { TrasteroFormModal } from "@/components/trastero-form-modal"
-import { TrasterosTable } from "@/components/trasteros-table"
+import { TrasteroFormModal } from "@/components/data-tables/trasteros/trastero-form-modal"
+import { TrasterosTable } from "@/components/data-tables/trasteros/trasteros-table"
 import { Button } from "@/components/ui/button"
 
 function TableSkeleton() {

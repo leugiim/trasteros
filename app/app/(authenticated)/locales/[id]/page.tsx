@@ -7,16 +7,12 @@ import type { components } from "@/lib/api/types"
 import { fetchClient } from "@/lib/api/fetch-client"
 import { usePageHeader } from "@/lib/page-header-context"
 import { formatCurrency, formatDate } from "@/lib/format"
-import { TrasterosTable } from "@/components/trasteros-table"
-import { TrasteroFormModal } from "@/components/trastero-form-modal"
-import { IngresosTable, type Ingreso } from "@/components/ingresos-table"
-import { GastosTable, type Gasto } from "@/components/gastos-table"
+import { TrasterosTable } from "@/components/data-tables/trasteros/trasteros-table"
+import { TrasteroFormModal } from "@/components/data-tables/trasteros/trastero-form-modal"
+import { IngresosTable, type Ingreso } from "@/components/data-tables/ingresos/ingresos-table"
+import { GastosTable, type Gasto } from "@/components/data-tables/gastos/gastos-table"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import {
   Tabs,
   TabsList,
@@ -153,56 +149,39 @@ export default function LocalDetailPage() {
         </TabsList>
 
         <TabsContent value="trasteros">
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="text-lg">Trasteros</CardTitle>
+          <TrasteroFormModal
+            open={trasteroModalOpen}
+            onOpenChange={setTrasteroModalOpen}
+            defaultLocalId={local.id}
+            defaultLocalNombre={local.nombre}
+            onSuccess={fetchData}
+          />
+          <TrasterosTable
+            trasteros={trasteros}
+            title="Trasteros"
+            showSearch={false}
+            action={
               <Button size="sm" onClick={() => setTrasteroModalOpen(true)}>
                 <Plus className="size-4" />
                 Crear trastero
               </Button>
-            </CardHeader>
-            <div className="px-6 pb-6">
-              <TrasteroFormModal
-                open={trasteroModalOpen}
-                onOpenChange={setTrasteroModalOpen}
-                defaultLocalId={local.id}
-                defaultLocalNombre={local.nombre}
-                onSuccess={fetchData}
-              />
-              <TrasterosTable
-                trasteros={trasteros}
-                showSearch={false}
-              />
-            </div>
-          </Card>
+            }
+          />
         </TabsContent>
 
         <TabsContent value="finanzas">
           <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Ingresos</CardTitle>
-              </CardHeader>
-              <div className="px-6 pb-6">
-                <IngresosTable
-                  ingresos={ingresos}
-                  contratoTrasteroMap={new Map()}
-                  showSearch={false}
-                />
-              </div>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Gastos</CardTitle>
-              </CardHeader>
-              <div className="px-6 pb-6">
-                <GastosTable
-                  gastos={gastos}
-                  showSearch={false}
-                />
-              </div>
-            </Card>
+            <IngresosTable
+              ingresos={ingresos}
+              contratoTrasteroMap={new Map()}
+              title="Ingresos"
+              showSearch={false}
+            />
+            <GastosTable
+              gastos={gastos}
+              title="Gastos"
+              showSearch={false}
+            />
           </div>
         </TabsContent>
       </Tabs>
