@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { fetchClient } from "@/lib/api/fetch-client"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -22,17 +22,43 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+export interface LocalData {
+  id: number
+  nombre: string
+  direccionId: number
+  superficieTotal?: number | null
+  numeroTrasteros?: number | null
+  fechaCompra?: string | null
+  precioCompra?: number | null
+  referenciaCatastral?: string | null
+  valorCatastral?: number | null
+  direccion: {
+    id: number
+    tipoVia?: string | null
+    nombreVia: string
+    numero?: string | null
+    piso?: string | null
+    puerta?: string | null
+    codigoPostal: string
+    ciudad: string
+    provincia: string
+  }
+}
+
 interface LocalFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  local?: LocalData | null
   onSuccess?: () => void
 }
 
 export function LocalFormModal({
   open,
   onOpenChange,
+  local,
   onSuccess,
 }: LocalFormModalProps) {
+  const isEditing = !!local
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
@@ -44,6 +70,7 @@ export function LocalFormModal({
   const [fechaCompra, setFechaCompra] = useState<Date | undefined>()
   const [precioCompra, setPrecioCompra] = useState("")
   const [referenciaCatastral, setReferenciaCatastral] = useState("")
+  const [valorCatastral, setValorCatastral] = useState("")
 
   // Direccion fields
   const [tipoVia, setTipoVia] = useState("")
@@ -55,6 +82,26 @@ export function LocalFormModal({
   const [ciudad, setCiudad] = useState("")
   const [provincia, setProvincia] = useState("")
 
+  useEffect(() => {
+    if (open && local) {
+      setNombre(local.nombre)
+      setSuperficieTotal(local.superficieTotal != null ? String(local.superficieTotal) : "")
+      setNumeroTrasteros(local.numeroTrasteros != null ? String(local.numeroTrasteros) : "")
+      setFechaCompra(local.fechaCompra ? new Date(local.fechaCompra) : undefined)
+      setPrecioCompra(local.precioCompra != null ? String(local.precioCompra) : "")
+      setReferenciaCatastral(local.referenciaCatastral ?? "")
+      setValorCatastral(local.valorCatastral != null ? String(local.valorCatastral) : "")
+      setTipoVia(local.direccion.tipoVia ?? "")
+      setNombreVia(local.direccion.nombreVia)
+      setNumero(local.direccion.numero ?? "")
+      setPiso(local.direccion.piso ?? "")
+      setPuerta(local.direccion.puerta ?? "")
+      setCodigoPostal(local.direccion.codigoPostal)
+      setCiudad(local.direccion.ciudad)
+      setProvincia(local.direccion.provincia)
+    }
+  }, [open, local])
+
   const resetForm = () => {
     setError(null)
     setFieldErrors({})
@@ -64,6 +111,7 @@ export function LocalFormModal({
     setFechaCompra(undefined)
     setPrecioCompra("")
     setReferenciaCatastral("")
+    setValorCatastral("")
     setTipoVia("")
     setNombreVia("")
     setNumero("")
@@ -86,7 +134,6 @@ export function LocalFormModal({
     setFieldErrors({})
 
     try {
-      // 1. Create direccion
       const dirBody = {
         tipoVia: tipoVia || null,
         nombreVia,
@@ -99,41 +146,70 @@ export function LocalFormModal({
         pais: "España",
       }
 
-      const dirRes = await fetchClient("/api/direcciones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dirBody),
-      })
+      let direccionId: number
 
-      if (!dirRes.ok) {
-        const dirData = await dirRes.json()
-        const details = dirData.error?.details as Record<string, string[]> | undefined
-        if (details) {
-          setFieldErrors(details)
-        } else {
-          setError(dirData.error?.message ?? "Error al crear dirección")
+      if (isEditing) {
+        // Update existing direccion
+        const dirRes = await fetchClient(`/api/direcciones/${local.direccion.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dirBody),
+        })
+
+        if (!dirRes.ok) {
+          const dirData = await dirRes.json()
+          const details = dirData.error?.details as Record<string, string[]> | undefined
+          if (details) {
+            setFieldErrors(details)
+          } else {
+            setError(dirData.error?.message ?? "Error al actualizar dirección")
+          }
+          return
         }
-        return
+
+        direccionId = local.direccion.id
+      } else {
+        // Create new direccion
+        const dirRes = await fetchClient("/api/direcciones", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dirBody),
+        })
+
+        if (!dirRes.ok) {
+          const dirData = await dirRes.json()
+          const details = dirData.error?.details as Record<string, string[]> | undefined
+          if (details) {
+            setFieldErrors(details)
+          } else {
+            setError(dirData.error?.message ?? "Error al crear dirección")
+          }
+          return
+        }
+
+        const direccion = await dirRes.json()
+        direccionId = direccion.id
       }
 
-      const direccion = await dirRes.json()
-
-      // 2. Create local with direccionId
       const localBody = {
         nombre,
-        direccionId: direccion.id,
+        direccionId,
         superficieTotal: superficieTotal ? Number(superficieTotal) : null,
         numeroTrasteros: numeroTrasteros ? Number(numeroTrasteros) : null,
         fechaCompra: fechaCompra ? format(fechaCompra, "yyyy-MM-dd") : null,
         precioCompra: precioCompra ? Number(precioCompra) : null,
         referenciaCatastral: referenciaCatastral || null,
+        valorCatastral: valorCatastral ? Number(valorCatastral) : null,
       }
 
-      const localRes = await fetchClient("/api/locales", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(localBody),
-      })
+      const localRes = await fetchClient(
+        isEditing ? `/api/locales/${local.id}` : "/api/locales",
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(localBody),
+        }
+      )
 
       if (!localRes.ok) {
         const localData = await localRes.json()
@@ -141,7 +217,7 @@ export function LocalFormModal({
         if (details) {
           setFieldErrors(details)
         } else {
-          setError(localData.error?.message ?? "Error al crear local")
+          setError(localData.error?.message ?? `Error al ${isEditing ? "actualizar" : "crear"} local`)
         }
         return
       }
@@ -159,7 +235,7 @@ export function LocalFormModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Nuevo local</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar local" : "Nuevo local"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4">
@@ -335,14 +411,28 @@ export function LocalFormModal({
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="referenciaCatastral">Ref. catastral</Label>
-            <Input
-              id="referenciaCatastral"
-              value={referenciaCatastral}
-              onChange={(e) => setReferenciaCatastral(e.target.value)}
-              placeholder="1234567AB1234C0001AB"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="referenciaCatastral">Ref. catastral</Label>
+              <Input
+                id="referenciaCatastral"
+                value={referenciaCatastral}
+                onChange={(e) => setReferenciaCatastral(e.target.value)}
+                placeholder="1234567AB1234C0001AB"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="valorCatastral">Valor catastral</Label>
+              <Input
+                id="valorCatastral"
+                type="number"
+                step="0.01"
+                min="0"
+                value={valorCatastral}
+                onChange={(e) => setValorCatastral(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
           </div>
 
           <DialogFooter>
@@ -350,7 +440,7 @@ export function LocalFormModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Guardando..." : "Crear local"}
+              {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear local"}
             </Button>
           </DialogFooter>
         </form>

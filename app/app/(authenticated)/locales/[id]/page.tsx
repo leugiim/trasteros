@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { MapPin, Calendar, Hash, Ruler, Plus } from "lucide-react"
+import {
+  MapPin, Calendar, Hash, Ruler, Plus, Pencil,
+  TrendingUp, TrendingDown, Wallet, Scale,
+  Warehouse, DoorOpen, DoorClosed, Percent,
+  Landmark, CircleCheckBig, CircleDollarSign, Clock,
+  FileText, BadgeDollarSign, ShoppingCart, ChartNoAxesCombined,
+} from "lucide-react"
 import type { components } from "@/lib/api/types"
 import { fetchClient } from "@/lib/api/fetch-client"
 import { usePageHeader } from "@/lib/page-header-context"
@@ -15,6 +21,7 @@ import { GastoFormModal } from "@/components/data-tables/gastos/gasto-form-modal
 import { IngresoFormModal } from "@/components/data-tables/ingresos/ingreso-form-modal"
 import { PrestamosTable, type Prestamo } from "@/components/data-tables/prestamos/prestamos-table"
 import { PrestamoFormModal } from "@/components/data-tables/prestamos/prestamo-form-modal"
+import { LocalFormModal } from "@/components/data-tables/locales/local-form-modal"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -63,11 +70,12 @@ export default function LocalDetailPage() {
   const [prestamos, setPrestamos] = useState<Prestamo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [contratos, setContratos] = useState<{ id: number; trastero?: { numero: string } }[]>([])
+  const [contratos, setContratos] = useState<{ id: number; trastero?: { id: number; numero: string }; cliente?: { nombre: string; apellidos?: string }; estado?: string }[]>([])
   const [trasteroModalOpen, setTrasteroModalOpen] = useState(false)
   const [prestamoModalOpen, setPrestamoModalOpen] = useState(false)
   const [ingresoModalOpen, setIngresoModalOpen] = useState(false)
   const [gastoModalOpen, setGastoModalOpen] = useState(false)
+  const [editingLocal, setEditingLocal] = useState(false)
   const { setHeaderContent } = usePageHeader()
 
   const fetchData = () => {
@@ -89,7 +97,7 @@ export default function LocalDetailPage() {
       fetchClient(`/api/prestamos/local/${id}`).then((res) =>
         res.ok ? res.json() : { data: [] }
       ),
-      fetchClient(`/api/contratos?estado=activo`).then((res) =>
+      fetchClient(`/api/contratos`).then((res) =>
         res.ok ? res.json() : { data: [] }
       ),
     ])
@@ -102,7 +110,7 @@ export default function LocalDetailPage() {
         // Filter contratos belonging to this local's trasteros
         const trasteroIds = new Set((trasterosData.data ?? []).map((t: Trastero) => t.id))
         setContratos(
-          (contratosData.data ?? []).filter((c: { trasteroId?: number }) => trasteroIds.has(c.trasteroId))
+          (contratosData.data ?? []).filter((c: { trastero?: { id: number } }) => trasteroIds.has(c.trastero?.id))
         )
       })
       .catch((err) => setError(err.message))
@@ -146,29 +154,69 @@ export default function LocalDetailPage() {
   const dir = local.direccion
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:gap-6 md:py-6 lg:px-6">
+    <div className="flex flex-col gap-4 px-4 py-3 md:gap-6 md:py-3 lg:px-3">
       {/* Info card */}
       <Card>
-        <div className="grid grid-cols-3 gap-x-6 gap-y-3 p-5">
-          <InfoField icon={MapPin} label="Dirección" value={dir.direccionCompleta} />
-          <InfoField icon={Ruler} label="Superficie" value={local.superficieTotal ? `${local.superficieTotal} m²` : null} />
-          <InfoField icon={Hash} label="Nº trasteros" value={local.numeroTrasteros != null ? String(local.numeroTrasteros) : null} />
-          <InfoField icon={Calendar} label="Fecha compra" value={formatDate(local.fechaCompra)} />
-          <InfoField label="Precio compra" value={formatCurrency(local.precioCompra)} />
-          <InfoField label="Ref. catastral" value={local.referenciaCatastral} />
-          <InfoField label="Valor catastral" value={formatCurrency(local.valorCatastral)} />
-          <InfoField label="C.P." value={dir.codigoPostal} />
-          <InfoField label="Ciudad" value={`${dir.ciudad}, ${dir.provincia}`} />
+        <div className="relative p-5">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="absolute right-3 top-3"
+            onClick={() => setEditingLocal(true)}
+          >
+            <Pencil className="size-3.5" />
+            <span className="sr-only">Editar local</span>
+          </Button>
+          <div className="grid grid-cols-3 gap-x-6 gap-y-3">
+            <InfoField icon={MapPin} label="Dirección" value={dir.direccionCompleta} />
+            <InfoField icon={Ruler} label="Superficie" value={local.superficieTotal ? `${local.superficieTotal} m²` : null} />
+            <InfoField icon={Hash} label="Nº trasteros" value={local.numeroTrasteros != null ? String(local.numeroTrasteros) : null} />
+            <InfoField icon={Calendar} label="Fecha compra" value={formatDate(local.fechaCompra)} />
+            <InfoField label="Precio compra" value={formatCurrency(local.precioCompra)} />
+            <InfoField label="Ref. catastral" value={local.referenciaCatastral} />
+            <InfoField label="Valor catastral" value={formatCurrency(local.valorCatastral)} />
+            <InfoField label="C.P." value={dir.codigoPostal} />
+            <InfoField label="Ciudad" value={`${dir.ciudad}, ${dir.provincia}`} />
+          </div>
         </div>
       </Card>
+      <LocalFormModal
+        open={editingLocal}
+        onOpenChange={setEditingLocal}
+        local={{
+          id: local.id,
+          nombre: local.nombre,
+          direccionId: dir.id,
+          superficieTotal: local.superficieTotal,
+          numeroTrasteros: local.numeroTrasteros,
+          fechaCompra: local.fechaCompra,
+          precioCompra: local.precioCompra,
+          referenciaCatastral: local.referenciaCatastral,
+          valorCatastral: local.valorCatastral,
+          direccion: dir,
+        }}
+        onSuccess={fetchData}
+      />
 
       {/* Tabs */}
-      <Tabs defaultValue="trasteros">
+      <Tabs defaultValue="metricas">
         <TabsList variant="line">
+          <TabsTrigger value="metricas">Métricas</TabsTrigger>
           <TabsTrigger value="trasteros">Trasteros</TabsTrigger>
           <TabsTrigger value="finanzas">Finanzas</TabsTrigger>
           <TabsTrigger value="prestamos">Préstamos</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="metricas">
+          <MetricasPanel
+            trasteros={trasteros}
+            ingresos={ingresos}
+            gastos={gastos}
+            prestamos={prestamos}
+            contratos={contratos}
+            local={local}
+          />
+        </TabsContent>
 
         <TabsContent value="trasteros">
           <TrasteroFormModal
@@ -198,6 +246,8 @@ export default function LocalDetailPage() {
             contratos={contratos.map((c) => ({
               id: c.id,
               trasteroNumero: c.trastero?.numero ?? `#${c.id}`,
+              clienteNombre: [c.cliente?.nombre, c.cliente?.apellidos].filter(Boolean).join(" ") || undefined,
+              estado: c.estado,
             }))}
             onSuccess={fetchData}
           />
@@ -260,6 +310,155 @@ export default function LocalDetailPage() {
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+function MetricasPanel({
+  trasteros,
+  ingresos,
+  gastos,
+  prestamos,
+  contratos,
+  local,
+}: {
+  trasteros: Trastero[]
+  ingresos: Ingreso[]
+  gastos: Gasto[]
+  prestamos: Prestamo[]
+  contratos: { estado?: string }[]
+  local: Local
+}) {
+  const totalTrasteros = trasteros.length
+  const ocupados = trasteros.filter((t) => t.estado === "ocupado").length
+  const disponibles = trasteros.filter((t) => t.estado === "disponible").length
+  const tasaOcupacion = totalTrasteros > 0 ? (ocupados / totalTrasteros) * 100 : 0
+
+  const totalIngresos = ingresos.reduce((sum, i) => sum + i.importe, 0)
+  const totalGastos = gastos.reduce((sum, g) => sum + g.importe, 0)
+  const balance = totalIngresos - totalGastos
+
+  const totalCapitalPrestamos = prestamos.reduce((sum, p) => sum + p.totalADevolver, 0)
+  const totalAmortizado = prestamos.reduce((sum, p) => sum + (p.amortizado ?? 0), 0)
+  const pendienteAmortizar = totalCapitalPrestamos - totalAmortizado
+  const pctAmortizado = totalCapitalPrestamos > 0 ? (totalAmortizado / totalCapitalPrestamos) * 100 : 0
+
+  const contratosActivos = contratos.filter((c) => c.estado === "activo").length
+
+  const ingresoMensualPotencial = trasteros
+    .filter((t) => t.estado === "ocupado")
+    .reduce((sum, t) => sum + (t.precioMensual ?? 0), 0)
+
+  const rentabilidad =
+    local.precioCompra && local.precioCompra > 0
+      ? (totalIngresos - totalGastos) / local.precioCompra * 100
+      : null
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Trasteros */}
+      <div>
+        <p className="text-muted-foreground mb-3 text-xs font-medium uppercase tracking-wide">Trasteros</p>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <StatCard label="Total" value={String(totalTrasteros)} icon={Warehouse} iconClassName="text-blue-500" />
+          <StatCard label="Ocupados" value={String(ocupados)} icon={DoorClosed} iconClassName="text-amber-500" />
+          <StatCard label="Disponibles" value={String(disponibles)} icon={DoorOpen} iconClassName="text-emerald-500" />
+          <StatCard label="Tasa ocupación" value={`${tasaOcupacion.toFixed(0)}%`} icon={Percent} iconClassName="text-violet-500" />
+        </div>
+      </div>
+
+      {/* Financiero */}
+      <div>
+        <p className="text-muted-foreground mb-3 text-xs font-medium uppercase tracking-wide">Financiero</p>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <StatCard
+            label="Total ingresos"
+            value={formatCurrency(totalIngresos)}
+            icon={TrendingUp}
+            iconClassName="text-emerald-500"
+          />
+          <StatCard
+            label="Total gastos"
+            value={formatCurrency(totalGastos)}
+            icon={TrendingDown}
+            iconClassName="text-red-500"
+          />
+          <StatCard
+            label="Balance"
+            value={formatCurrency(balance)}
+            icon={Scale}
+            iconClassName={balance >= 0 ? "text-emerald-500" : "text-red-500"}
+            valueClassName={balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}
+          />
+          <StatCard label="Contratos activos" value={String(contratosActivos)} icon={FileText} iconClassName="text-blue-500" />
+        </div>
+      </div>
+
+      {/* Préstamos */}
+      {prestamos.length > 0 && (
+        <div>
+          <p className="text-muted-foreground mb-3 text-xs font-medium uppercase tracking-wide">Préstamos</p>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <StatCard label="Total a devolver" value={formatCurrency(totalCapitalPrestamos)} icon={Landmark} iconClassName="text-orange-500" />
+            <StatCard label="Amortizado" value={formatCurrency(totalAmortizado)} sub={`${pctAmortizado.toFixed(1)}%`} icon={CircleCheckBig} iconClassName="text-emerald-500" />
+            <StatCard label="Pendiente" value={formatCurrency(pendienteAmortizar)} icon={Clock} iconClassName="text-amber-500" />
+            <StatCard label="Préstamos activos" value={String(prestamos.filter((p) => p.estado === "activo").length)} icon={Wallet} iconClassName="text-violet-500" />
+          </div>
+        </div>
+      )}
+
+      {/* Rentabilidad */}
+      <div>
+        <p className="text-muted-foreground mb-3 text-xs font-medium uppercase tracking-wide">Rentabilidad</p>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <StatCard label="Ingreso mensual potencial" value={formatCurrency(ingresoMensualPotencial)} icon={CircleDollarSign} iconClassName="text-emerald-500" />
+          <StatCard label="Precio compra" value={formatCurrency(local.precioCompra)} icon={ShoppingCart} iconClassName="text-slate-500" />
+          {rentabilidad !== null && (
+            <StatCard
+              label="Rentabilidad s/ compra"
+              value={`${rentabilidad.toFixed(2)}%`}
+              icon={ChartNoAxesCombined}
+              iconClassName={rentabilidad >= 0 ? "text-emerald-500" : "text-red-500"}
+              valueClassName={rentabilidad >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  iconClassName,
+  valueClassName,
+}: {
+  label: string
+  value: string
+  sub?: string
+  icon?: React.ComponentType<{ className?: string }>
+  iconClassName?: string
+  valueClassName?: string
+}) {
+  return (
+    <Card>
+      <div className="flex items-center gap-2.5 px-3 py-0">
+        {Icon && (
+          <div className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-md">
+            <Icon className={`size-5 ${iconClassName ?? ""}`} />
+          </div>
+        )}
+        <div className="flex items-baseline gap-1.5">
+          <span className={`text-sm font-semibold tabular-nums leading-none ${valueClassName ?? ""}`}>
+            {value}
+            {sub && <span className="text-muted-foreground text-[10px] font-normal">({sub})</span>}
+          </span>
+          <span className="text-muted-foreground text-[11px] leading-none">{label}</span>
+        </div>
+      </div>
+    </Card>
   )
 }
 

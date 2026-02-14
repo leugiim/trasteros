@@ -189,6 +189,7 @@ export default function ClienteDetailPage() {
             contratos={contratos.map((c) => ({
               id: c.id!,
               trasteroNumero: c.trastero?.numero ?? `#${c.id}`,
+              estado: c.estado,
             }))}
             onSuccess={fetchData}
           />

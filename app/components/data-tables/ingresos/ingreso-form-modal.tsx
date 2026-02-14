@@ -28,10 +28,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 
 interface ContratoOption {
   id: number
   trasteroNumero: string
+  clienteNombre?: string
+  estado?: string
 }
 
 interface IngresoFormModalProps {
@@ -143,42 +146,51 @@ export function IngresoFormModal({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="contratoId">Contrato *</Label>
-              <Select value={contratoId} onValueChange={setContratoId} required>
-                <SelectTrigger id="contratoId" className="w-full">
-                  <SelectValue placeholder="Seleccionar contrato" />
-                </SelectTrigger>
-                <SelectContent>
-                  {contratos.length === 0 ? (
-                    <SelectItem value="_empty" disabled>
-                      No hay contratos
+          <div className="grid gap-2">
+            <Label htmlFor="contratoId">Contrato *</Label>
+            <Select value={contratoId} onValueChange={setContratoId} required>
+              <SelectTrigger id="contratoId" className="w-full">
+                <SelectValue placeholder="Seleccionar contrato" />
+              </SelectTrigger>
+              <SelectContent>
+                {contratos.length === 0 ? (
+                  <SelectItem value="_empty" disabled>
+                    No hay contratos
+                  </SelectItem>
+                ) : (
+                  contratos.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      <span className="flex items-center gap-2">
+                        #{c.id} — Trastero {c.trasteroNumero}
+                        {c.clienteNombre && (
+                          <span className="text-muted-foreground">({c.clienteNombre})</span>
+                        )}
+                        {c.estado && (
+                          <Badge variant={c.estado === "activo" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+                            {c.estado}
+                          </Badge>
+                        )}
+                      </span>
                     </SelectItem>
-                  ) : (
-                    contratos.map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        #{c.id} — {c.trasteroNumero}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {fieldErrors.contratoId?.map((msg) => (
-                <p key={msg} className="text-destructive text-sm">{msg}</p>
-              ))}
-            </div>
-            <div className="grid gap-2">
-              <Label>Fecha de pago *</Label>
-              <DatePicker
-                value={fechaPago}
-                onChange={setFechaPago}
-                placeholder="Seleccionar fecha"
-              />
-              {fieldErrors.fechaPago?.map((msg) => (
-                <p key={msg} className="text-destructive text-sm">{msg}</p>
-              ))}
-            </div>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+            {fieldErrors.contratoId?.map((msg) => (
+              <p key={msg} className="text-destructive text-sm">{msg}</p>
+            ))}
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Fecha de pago *</Label>
+            <DatePicker
+              value={fechaPago}
+              onChange={setFechaPago}
+              placeholder="Seleccionar fecha"
+            />
+            {fieldErrors.fechaPago?.map((msg) => (
+              <p key={msg} className="text-destructive text-sm">{msg}</p>
+            ))}
           </div>
 
           <div className="grid gap-2">
