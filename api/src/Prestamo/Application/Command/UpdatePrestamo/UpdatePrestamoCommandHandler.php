@@ -7,6 +7,7 @@ namespace App\Prestamo\Application\Command\UpdatePrestamo;
 use App\Local\Domain\Exception\LocalNotFoundException;
 use App\Local\Domain\Model\LocalId;
 use App\Local\Domain\Repository\LocalRepositoryInterface;
+use App\Gasto\Domain\Repository\GastoRepositoryInterface;
 use App\Prestamo\Application\DTO\PrestamoResponse;
 use App\Prestamo\Domain\Exception\InvalidPrestamoEstadoException;
 use App\Prestamo\Domain\Exception\PrestamoNotFoundException;
@@ -23,7 +24,8 @@ final readonly class UpdatePrestamoCommandHandler
 {
     public function __construct(
         private PrestamoRepositoryInterface $prestamoRepository,
-        private LocalRepositoryInterface $localRepository
+        private LocalRepositoryInterface $localRepository,
+        private GastoRepositoryInterface $gastoRepository
     ) {
     }
 
@@ -69,6 +71,8 @@ final readonly class UpdatePrestamoCommandHandler
 
         $this->prestamoRepository->save($prestamo);
 
-        return PrestamoResponse::fromPrestamo($prestamo);
+        $amortizado = $this->gastoRepository->getTotalImporteByPrestamoId($command->id);
+
+        return PrestamoResponse::fromPrestamo($prestamo, $amortizado);
     }
 }

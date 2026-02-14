@@ -23,6 +23,7 @@ export default async function AuthenticatedLayout({
 
   return (
     <SidebarProvider
+        defaultOpen={false}
         style={
           {
             "--sidebar-width": "calc(var(--spacing) * 72)",

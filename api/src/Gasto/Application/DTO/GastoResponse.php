@@ -18,6 +18,7 @@ final readonly class GastoResponse
         public string $fecha,
         public string $categoria,
         public ?string $metodoPago,
+        public ?int $prestamoId,
         public string $createdAt,
         public string $updatedAt,
         public ?string $deletedAt
@@ -36,6 +37,7 @@ final readonly class GastoResponse
             fecha: $gasto->fecha()->format('Y-m-d'),
             categoria: $gasto->categoria()->value,
             metodoPago: $gasto->metodoPago()?->value,
+            prestamoId: $gasto->prestamo()?->id()?->value,
             createdAt: $gasto->createdAt()->format('Y-m-d H:i:s'),
             updatedAt: $gasto->updatedAt()->format('Y-m-d H:i:s'),
             deletedAt: $gasto->deletedAt()?->format('Y-m-d H:i:s')
@@ -54,6 +56,7 @@ final readonly class GastoResponse
             'fecha' => $this->fecha,
             'categoria' => $this->categoria,
             'metodoPago' => $this->metodoPago,
+            'prestamoId' => $this->prestamoId,
             'createdAt' => $this->createdAt,
             'updatedAt' => $this->updatedAt,
             'deletedAt' => $this->deletedAt,

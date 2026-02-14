@@ -16,6 +16,8 @@ use App\Gasto\Domain\Repository\GastoRepositoryInterface;
 use App\Local\Domain\Exception\LocalNotFoundException;
 use App\Local\Domain\Model\LocalId;
 use App\Local\Domain\Repository\LocalRepositoryInterface;
+use App\Prestamo\Domain\Model\PrestamoId;
+use App\Prestamo\Domain\Repository\PrestamoRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -23,7 +25,8 @@ final readonly class UpdateGastoCommandHandler
 {
     public function __construct(
         private GastoRepositoryInterface $gastoRepository,
-        private LocalRepositoryInterface $localRepository
+        private LocalRepositoryInterface $localRepository,
+        private PrestamoRepositoryInterface $prestamoRepository
     ) {
     }
 
@@ -63,6 +66,11 @@ final readonly class UpdateGastoCommandHandler
 
         $importe = Importe::fromFloat($command->importe);
 
+        $prestamo = null;
+        if ($command->prestamoId !== null) {
+            $prestamo = $this->prestamoRepository->findById(PrestamoId::fromInt($command->prestamoId));
+        }
+
         $gasto->update(
             local: $local,
             concepto: $command->concepto,
@@ -70,7 +78,8 @@ final readonly class UpdateGastoCommandHandler
             fecha: $fecha,
             categoria: $categoria,
             descripcion: $command->descripcion,
-            metodoPago: $metodoPago
+            metodoPago: $metodoPago,
+            prestamo: $prestamo
         );
 
         $this->gastoRepository->save($gasto);

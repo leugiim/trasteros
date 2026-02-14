@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Gasto\Domain\Model;
 
 use App\Local\Domain\Model\Local;
+use App\Prestamo\Domain\Model\Prestamo;
 use App\Users\Domain\Model\User;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -44,6 +45,10 @@ class Gasto
     #[ORM\Column(type: Types::STRING, length: 50, nullable: true, enumType: MetodoPago::class)]
     private ?MetodoPago $metodoPago = null;
 
+    #[ORM\ManyToOne(targetEntity: Prestamo::class)]
+    #[ORM\JoinColumn(name: 'prestamo_id', referencedColumnName: 'id', nullable: true)]
+    private ?Prestamo $prestamo = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
@@ -72,7 +77,8 @@ class Gasto
         \DateTimeImmutable $fecha,
         GastoCategoria $categoria,
         ?string $descripcion = null,
-        ?MetodoPago $metodoPago = null
+        ?MetodoPago $metodoPago = null,
+        ?Prestamo $prestamo = null
     ) {
         $this->local = $local;
         $this->concepto = $concepto;
@@ -81,6 +87,7 @@ class Gasto
         $this->categoria = $categoria;
         $this->descripcion = $descripcion;
         $this->metodoPago = $metodoPago;
+        $this->prestamo = $prestamo;
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -92,7 +99,8 @@ class Gasto
         \DateTimeImmutable $fecha,
         GastoCategoria $categoria,
         ?string $descripcion = null,
-        ?MetodoPago $metodoPago = null
+        ?MetodoPago $metodoPago = null,
+        ?Prestamo $prestamo = null
     ): self {
         return new self(
             local: $local,
@@ -101,7 +109,8 @@ class Gasto
             fecha: $fecha,
             categoria: $categoria,
             descripcion: $descripcion,
-            metodoPago: $metodoPago
+            metodoPago: $metodoPago,
+            prestamo: $prestamo
         );
     }
 
@@ -112,7 +121,8 @@ class Gasto
         \DateTimeImmutable $fecha,
         GastoCategoria $categoria,
         ?string $descripcion,
-        ?MetodoPago $metodoPago
+        ?MetodoPago $metodoPago,
+        ?Prestamo $prestamo = null
     ): void {
         $this->local = $local;
         $this->concepto = $concepto;
@@ -121,6 +131,7 @@ class Gasto
         $this->categoria = $categoria;
         $this->descripcion = $descripcion;
         $this->metodoPago = $metodoPago;
+        $this->prestamo = $prestamo;
         $this->updatedAt = new \DateTimeImmutable();
     }
 
@@ -180,6 +191,11 @@ class Gasto
     public function metodoPago(): ?MetodoPago
     {
         return $this->metodoPago;
+    }
+
+    public function prestamo(): ?Prestamo
+    {
+        return $this->prestamo;
     }
 
     public function createdAt(): \DateTimeImmutable

@@ -171,6 +171,46 @@ final class DoctrineGastoRepository extends ServiceEntityRepository implements G
         return $result !== null ? (float) $result : 0.0;
     }
 
+    public function getTotalImporteByPrestamoId(int $prestamoId): float
+    {
+        $result = $this->createQueryBuilder('g')
+            ->select('SUM(g.importe) as total')
+            ->join('g.prestamo', 'p')
+            ->where('p.id = :prestamoId')
+            ->andWhere('g.deletedAt IS NULL')
+            ->setParameter('prestamoId', $prestamoId)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result !== null ? (float) $result : 0.0;
+    }
+
+    /**
+     * @return array<int, float>
+     */
+    public function getTotalImporteGroupedByPrestamo(array $prestamoIds): array
+    {
+        if (empty($prestamoIds)) {
+            return [];
+        }
+
+        $results = $this->createQueryBuilder('g')
+            ->select('IDENTITY(g.prestamo) as prestamoId, SUM(g.importe) as total')
+            ->where('g.prestamo IN (:ids)')
+            ->andWhere('g.deletedAt IS NULL')
+            ->setParameter('ids', $prestamoIds)
+            ->groupBy('g.prestamo')
+            ->getQuery()
+            ->getResult();
+
+        $map = [];
+        foreach ($results as $row) {
+            $map[(int) $row['prestamoId']] = (float) $row['total'];
+        }
+
+        return $map;
+    }
+
     public function getTotalImporteByLocalAndDateRange(
         int $localId,
         \DateTimeImmutable $desde,

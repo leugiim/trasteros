@@ -59,6 +59,13 @@ interface GastoRepositoryInterface
 
     public function getTotalImporteByLocalAndCategoria(int $localId, GastoCategoria $categoria): float;
 
+    public function getTotalImporteByPrestamoId(int $prestamoId): float;
+
+    /**
+     * @return array<int, float> Map of prestamoId => total importe
+     */
+    public function getTotalImporteGroupedByPrestamo(array $prestamoIds): array;
+
     public function getTotalImporteByLocalAndDateRange(
         int $localId,
         \DateTimeImmutable $desde,

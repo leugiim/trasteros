@@ -38,7 +38,10 @@ final readonly class GastoRequest
             choices: ['efectivo', 'transferencia', 'tarjeta', 'domiciliacion'],
             message: 'El método de pago debe ser uno de: efectivo, transferencia, tarjeta, domiciliacion'
         )]
-        public ?string $metodoPago = null
+        public ?string $metodoPago = null,
+
+        #[Assert\Positive(message: 'El ID de préstamo debe ser un número positivo')]
+        public ?int $prestamoId = null
     ) {
     }
 }

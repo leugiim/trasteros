@@ -14,7 +14,8 @@ final readonly class UpdateGastoCommand
         public string $fecha,
         public string $categoria,
         public ?string $descripcion = null,
-        public ?string $metodoPago = null
+        public ?string $metodoPago = null,
+        public ?int $prestamoId = null
     ) {
     }
 }

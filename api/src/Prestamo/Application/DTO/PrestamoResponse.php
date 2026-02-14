@@ -19,13 +19,14 @@ final readonly class PrestamoResponse
         public ?float $tipoInteres,
         public string $fechaConcesion,
         public string $estado,
+        public float $amortizado,
         public string $createdAt,
         public string $updatedAt,
         public ?string $deletedAt
     ) {
     }
 
-    public static function fromPrestamo(Prestamo $prestamo): self
+    public static function fromPrestamo(Prestamo $prestamo, float $amortizado = 0.0): self
     {
         return new self(
             id: $prestamo->id()->value,
@@ -38,6 +39,7 @@ final readonly class PrestamoResponse
             tipoInteres: $prestamo->tipoInteres()?->value,
             fechaConcesion: $prestamo->fechaConcesion()->format('Y-m-d'),
             estado: $prestamo->estado()->value,
+            amortizado: $amortizado,
             createdAt: $prestamo->createdAt()->format('Y-m-d H:i:s'),
             updatedAt: $prestamo->updatedAt()->format('Y-m-d H:i:s'),
             deletedAt: $prestamo->deletedAt()?->format('Y-m-d H:i:s')
@@ -57,6 +59,7 @@ final readonly class PrestamoResponse
             'tipoInteres' => $this->tipoInteres,
             'fechaConcesion' => $this->fechaConcesion,
             'estado' => $this->estado,
+            'amortizado' => $this->amortizado,
             'createdAt' => $this->createdAt,
             'updatedAt' => $this->updatedAt,
             'deletedAt' => $this->deletedAt,

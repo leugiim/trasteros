@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Prestamo\Application\Query\FindPrestamo;
 
+use App\Gasto\Domain\Repository\GastoRepositoryInterface;
 use App\Prestamo\Application\DTO\PrestamoResponse;
 use App\Prestamo\Domain\Exception\PrestamoNotFoundException;
 use App\Prestamo\Domain\Model\PrestamoId;
@@ -14,7 +15,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class FindPrestamoQueryHandler
 {
     public function __construct(
-        private PrestamoRepositoryInterface $prestamoRepository
+        private PrestamoRepositoryInterface $prestamoRepository,
+        private GastoRepositoryInterface $gastoRepository
     ) {
     }
 
@@ -26,6 +28,8 @@ final readonly class FindPrestamoQueryHandler
             throw PrestamoNotFoundException::withId($query->id);
         }
 
-        return PrestamoResponse::fromPrestamo($prestamo);
+        $amortizado = $this->gastoRepository->getTotalImporteByPrestamoId($query->id);
+
+        return PrestamoResponse::fromPrestamo($prestamo, $amortizado);
     }
 }

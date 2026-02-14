@@ -130,7 +130,8 @@ final class GastoController extends AbstractController
             fecha: $request->fecha,
             categoria: $request->categoria,
             descripcion: $request->descripcion,
-            metodoPago: $request->metodoPago
+            metodoPago: $request->metodoPago,
+            prestamoId: $request->prestamoId
         ));
 
         $handledStamp = $envelope->last(HandledStamp::class);
@@ -172,7 +173,8 @@ final class GastoController extends AbstractController
             fecha: $request->fecha,
             categoria: $request->categoria,
             descripcion: $request->descripcion,
-            metodoPago: $request->metodoPago
+            metodoPago: $request->metodoPago,
+            prestamoId: $request->prestamoId
         ));
 
         $handledStamp = $envelope->last(HandledStamp::class);

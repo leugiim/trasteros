@@ -11,6 +11,10 @@ import { TrasterosTable } from "@/components/data-tables/trasteros/trasteros-tab
 import { TrasteroFormModal } from "@/components/data-tables/trasteros/trastero-form-modal"
 import { IngresosTable, type Ingreso } from "@/components/data-tables/ingresos/ingresos-table"
 import { GastosTable, type Gasto } from "@/components/data-tables/gastos/gastos-table"
+import { GastoFormModal } from "@/components/data-tables/gastos/gasto-form-modal"
+import { IngresoFormModal } from "@/components/data-tables/ingresos/ingreso-form-modal"
+import { PrestamosTable, type Prestamo } from "@/components/data-tables/prestamos/prestamos-table"
+import { PrestamoFormModal } from "@/components/data-tables/prestamos/prestamo-form-modal"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -56,9 +60,14 @@ export default function LocalDetailPage() {
   const [trasteros, setTrasteros] = useState<Trastero[]>([])
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
   const [gastos, setGastos] = useState<Gasto[]>([])
+  const [prestamos, setPrestamos] = useState<Prestamo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [contratos, setContratos] = useState<{ id: number; trastero?: { numero: string } }[]>([])
   const [trasteroModalOpen, setTrasteroModalOpen] = useState(false)
+  const [prestamoModalOpen, setPrestamoModalOpen] = useState(false)
+  const [ingresoModalOpen, setIngresoModalOpen] = useState(false)
+  const [gastoModalOpen, setGastoModalOpen] = useState(false)
   const { setHeaderContent } = usePageHeader()
 
   const fetchData = () => {
@@ -77,12 +86,24 @@ export default function LocalDetailPage() {
       fetchClient(`/api/locales/${id}/gastos`).then((res) =>
         res.ok ? res.json() : { data: [] }
       ),
+      fetchClient(`/api/prestamos/local/${id}`).then((res) =>
+        res.ok ? res.json() : { data: [] }
+      ),
+      fetchClient(`/api/contratos?estado=activo`).then((res) =>
+        res.ok ? res.json() : { data: [] }
+      ),
     ])
-      .then(([localData, trasterosData, ingresosData, gastosData]) => {
+      .then(([localData, trasterosData, ingresosData, gastosData, prestamosData, contratosData]) => {
         setLocal(localData)
         setTrasteros(trasterosData.data ?? [])
         setIngresos(ingresosData.data ?? [])
         setGastos(gastosData.data ?? [])
+        setPrestamos(prestamosData.data ?? [])
+        // Filter contratos belonging to this local's trasteros
+        const trasteroIds = new Set((trasterosData.data ?? []).map((t: Trastero) => t.id))
+        setContratos(
+          (contratosData.data ?? []).filter((c: { trasteroId?: number }) => trasteroIds.has(c.trasteroId))
+        )
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -146,6 +167,7 @@ export default function LocalDetailPage() {
         <TabsList variant="line">
           <TabsTrigger value="trasteros">Trasteros</TabsTrigger>
           <TabsTrigger value="finanzas">Finanzas</TabsTrigger>
+          <TabsTrigger value="prestamos">Préstamos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="trasteros">
@@ -170,19 +192,71 @@ export default function LocalDetailPage() {
         </TabsContent>
 
         <TabsContent value="finanzas">
+          <IngresoFormModal
+            open={ingresoModalOpen}
+            onOpenChange={setIngresoModalOpen}
+            contratos={contratos.map((c) => ({
+              id: c.id,
+              trasteroNumero: c.trastero?.numero ?? `#${c.id}`,
+            }))}
+            onSuccess={fetchData}
+          />
+          <GastoFormModal
+            open={gastoModalOpen}
+            onOpenChange={setGastoModalOpen}
+            localId={local.id}
+            prestamos={prestamos.map((p) => ({
+              id: p.id,
+              entidadBancaria: p.entidadBancaria,
+              numeroPrestamo: p.numeroPrestamo,
+            }))}
+            onSuccess={fetchData}
+          />
           <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
             <IngresosTable
               ingresos={ingresos}
               contratoTrasteroMap={new Map()}
               title="Ingresos"
               showSearch={false}
+              action={
+                <Button size="sm" onClick={() => setIngresoModalOpen(true)}>
+                  <Plus className="size-4" />
+                  Crear ingreso
+                </Button>
+              }
             />
             <GastosTable
               gastos={gastos}
               title="Gastos"
               showSearch={false}
+              action={
+                <Button size="sm" onClick={() => setGastoModalOpen(true)}>
+                  <Plus className="size-4" />
+                  Crear gasto
+                </Button>
+              }
             />
           </div>
+        </TabsContent>
+
+        <TabsContent value="prestamos">
+          <PrestamoFormModal
+            open={prestamoModalOpen}
+            onOpenChange={setPrestamoModalOpen}
+            localId={local.id}
+            onSuccess={fetchData}
+          />
+          <PrestamosTable
+            prestamos={prestamos}
+            title="Préstamos"
+            showSearch={false}
+            action={
+              <Button size="sm" onClick={() => setPrestamoModalOpen(true)}>
+                <Plus className="size-4" />
+                Crear préstamo
+              </Button>
+            }
+          />
         </TabsContent>
       </Tabs>
     </div>

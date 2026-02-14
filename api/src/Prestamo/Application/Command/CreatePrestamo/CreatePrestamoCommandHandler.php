@@ -62,6 +62,6 @@ final readonly class CreatePrestamoCommandHandler
 
         $this->prestamoRepository->save($prestamo);
 
-        return PrestamoResponse::fromPrestamo($prestamo);
+        return PrestamoResponse::fromPrestamo($prestamo, 0.0);
     }
 }

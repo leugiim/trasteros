@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Prestamo\Application\Query\ListPrestamos;
 
+use App\Gasto\Domain\Repository\GastoRepositoryInterface;
 use App\Prestamo\Application\DTO\PrestamoResponse;
 use App\Prestamo\Domain\Exception\InvalidPrestamoEstadoException;
 use App\Prestamo\Domain\Model\PrestamoEstado;
@@ -14,7 +15,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class ListPrestamosQueryHandler
 {
     public function __construct(
-        private PrestamoRepositoryInterface $prestamoRepository
+        private PrestamoRepositoryInterface $prestamoRepository,
+        private GastoRepositoryInterface $gastoRepository
     ) {
     }
 
@@ -40,8 +42,17 @@ final readonly class ListPrestamosQueryHandler
             $prestamos = $this->prestamoRepository->findAll();
         }
 
+        $prestamoIds = array_filter(array_map(
+            fn($p) => $p->id()?->value,
+            $prestamos
+        ));
+        $amortizadoMap = $this->gastoRepository->getTotalImporteGroupedByPrestamo($prestamoIds);
+
         return array_map(
-            fn($prestamo) => PrestamoResponse::fromPrestamo($prestamo),
+            fn($prestamo) => PrestamoResponse::fromPrestamo(
+                $prestamo,
+                $amortizadoMap[$prestamo->id()->value] ?? 0.0
+            ),
             $prestamos
         );
     }
