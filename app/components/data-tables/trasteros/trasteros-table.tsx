@@ -12,7 +12,8 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search } from "lucide-react"
+import { ArrowUpDown, Eye, Search } from "lucide-react"
+import Link from "next/link"
 import type { components } from "@/lib/api/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -60,7 +61,8 @@ const estadoLabel: Record<string, string> = {
   mantenimiento: "Mantenimiento",
 }
 
-const columns: ColumnDef<Trastero>[] = [
+function getColumns(): ColumnDef<Trastero>[] {
+return [
   {
     accessorKey: "id",
     header: "ID",
@@ -147,7 +149,20 @@ const columns: ColumnDef<Trastero>[] = [
       )
     },
   },
+  {
+    id: "actions",
+    header: "",
+    cell: ({ row }) => (
+      <Button variant="ghost" size="icon-sm" asChild>
+        <Link href={`/trasteros/${row.original.id}`}>
+          <Eye className="size-3.5" />
+          <span className="sr-only">Ver trastero</span>
+        </Link>
+      </Button>
+    ),
+  },
 ]
+}
 
 function TableSkeleton() {
   return (
@@ -171,6 +186,7 @@ function TableSkeleton() {
 export function TrasterosTable({ trasteros, title, action, showSearch = true }: TrasterosTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
+  const [columns] = useState(() => getColumns())
 
   const table = useReactTable({
     data: trasteros,

@@ -2,11 +2,20 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import { Mail, Phone, IdCard, Calendar, Plus, Pencil } from "lucide-react"
 import type { components } from "@/lib/api/types"
 import { fetchClient } from "@/lib/api/fetch-client"
 import { usePageHeader } from "@/lib/page-header-context"
 import { Badge } from "@/components/ui/badge"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { ClienteFormModal } from "@/components/data-tables/clientes/cliente-form-modal"
 import { ContratoFormModal, type ContratoData } from "@/components/data-tables/contratos/contrato-form-modal"
 import { IngresoFormModal, type IngresoData } from "@/components/data-tables/ingresos/ingreso-form-modal"
@@ -64,14 +73,24 @@ export default function ClienteDetailPage() {
   useEffect(() => {
     if (cliente) {
       setHeaderContent(
-        <div className="flex items-center gap-2">
-          <h1 className="text-base font-medium">
-            {cliente.nombre} {cliente.apellidos}
-          </h1>
-          <Badge variant={cliente.activo ? "default" : "secondary"} className="text-[10px]">
-            {cliente.activo ? "Activo" : "Inactivo"}
-          </Badge>
-        </div>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/clientes">Clientes</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{cliente.nombre} {cliente.apellidos}</BreadcrumbPage>
+            </BreadcrumbItem>
+            <li>
+              <Badge variant={cliente.activo ? "default" : "secondary"} className="text-[10px]">
+                {cliente.activo ? "Activo" : "Inactivo"}
+              </Badge>
+            </li>
+          </BreadcrumbList>
+        </Breadcrumb>
       )
     }
   }, [cliente])

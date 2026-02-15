@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import {
   MapPin, Calendar, Hash, Ruler, Plus, Pencil,
   TrendingUp, TrendingDown, Wallet, Scale,
@@ -15,6 +16,8 @@ import { usePageHeader } from "@/lib/page-header-context"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { TrasterosTable } from "@/components/data-tables/trasteros/trasteros-table"
 import { TrasteroFormModal } from "@/components/data-tables/trasteros/trastero-form-modal"
+import { ContratosTable, type ContratoWithRelations } from "@/components/data-tables/contratos/contratos-table"
+import { ContratoFormModal, type ContratoData } from "@/components/data-tables/contratos/contrato-form-modal"
 import { IngresosTable, type Ingreso } from "@/components/data-tables/ingresos/ingresos-table"
 import { GastosTable, type Gasto } from "@/components/data-tables/gastos/gastos-table"
 import { GastoFormModal, type GastoData } from "@/components/data-tables/gastos/gasto-form-modal"
@@ -24,6 +27,14 @@ import { PrestamoFormModal } from "@/components/data-tables/prestamos/prestamo-f
 import { LocalFormModal } from "@/components/data-tables/locales/local-form-modal"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import {
   Tabs,
   TabsList,
@@ -70,7 +81,8 @@ export default function LocalDetailPage() {
   const [prestamos, setPrestamos] = useState<Prestamo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [contratos, setContratos] = useState<{ id: number; trastero?: { id: number; numero: string }; cliente?: { nombre: string; apellidos?: string }; estado?: string }[]>([])
+  const [contratos, setContratos] = useState<ContratoWithRelations[]>([])
+  const [editingContrato, setEditingContrato] = useState<ContratoData | null>(null)
   const [trasteroModalOpen, setTrasteroModalOpen] = useState(false)
   const [prestamoModalOpen, setPrestamoModalOpen] = useState(false)
   const [ingresoModalOpen, setIngresoModalOpen] = useState(false)
@@ -127,7 +139,19 @@ export default function LocalDetailPage() {
   useEffect(() => {
     if (local) {
       setHeaderContent(
-        <h1 className="text-base font-medium">{local.nombre}</h1>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/locales">Locales</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{local.nombre}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
       )
     }
   }, [local])
@@ -205,6 +229,7 @@ export default function LocalDetailPage() {
         <TabsList variant="line">
           <TabsTrigger value="metricas">Métricas</TabsTrigger>
           <TabsTrigger value="trasteros">Trasteros</TabsTrigger>
+          <TabsTrigger value="contratos">Contratos</TabsTrigger>
           <TabsTrigger value="finanzas">Finanzas</TabsTrigger>
           <TabsTrigger value="prestamos">Préstamos</TabsTrigger>
         </TabsList>
@@ -241,6 +266,31 @@ export default function LocalDetailPage() {
           />
         </TabsContent>
 
+        <TabsContent value="contratos">
+          <ContratoFormModal
+            open={!!editingContrato}
+            onOpenChange={(open) => { if (!open) setEditingContrato(null) }}
+            clienteId={editingContrato?.clienteId ?? 0}
+            contrato={editingContrato}
+            onSuccess={fetchData}
+          />
+          <ContratosTable
+            contratos={contratos}
+            title="Contratos"
+            showSearch={false}
+            onEdit={(c) => setEditingContrato({
+              id: c.id!,
+              trastero: c.trastero,
+              clienteId: c.cliente?.id,
+              fechaInicio: c.fechaInicio,
+              fechaFin: c.fechaFin,
+              precioMensual: c.precioMensual,
+              fianza: c.fianza,
+              fianzaPagada: c.fianzaPagada,
+            })}
+          />
+        </TabsContent>
+
         <TabsContent value="finanzas">
           <IngresoFormModal
             open={ingresoModalOpen || !!editingIngreso}
@@ -248,9 +298,9 @@ export default function LocalDetailPage() {
               if (!v) { setIngresoModalOpen(false); setEditingIngreso(null) }
             }}
             contratos={contratos.map((c) => ({
-              id: c.id,
+              id: c.id!,
               trasteroNumero: c.trastero?.numero ?? `#${c.id}`,
-              clienteNombre: [c.cliente?.nombre, c.cliente?.apellidos].filter(Boolean).join(" ") || undefined,
+              clienteNombre: c.cliente?.nombre || undefined,
               estado: c.estado,
             }))}
             ingreso={editingIngreso}

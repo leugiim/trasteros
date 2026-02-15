@@ -25,12 +25,23 @@ interface LocalOption {
   nombre: string
 }
 
+export interface TrasteroData {
+  id: number
+  localId: number
+  numero: string
+  nombre?: string | null
+  superficie: number
+  precioMensual: number
+  estado?: string
+}
+
 interface TrasteroFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
   defaultLocalId?: number
   defaultLocalNombre?: string
+  trastero?: TrasteroData | null
 }
 
 export function TrasteroFormModal({
@@ -39,7 +50,9 @@ export function TrasteroFormModal({
   onSuccess,
   defaultLocalId,
   defaultLocalNombre,
+  trastero,
 }: TrasteroFormModalProps) {
+  const isEditing = !!trastero
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
@@ -53,13 +66,23 @@ export function TrasteroFormModal({
   const [precioMensual, setPrecioMensual] = useState("")
 
   useEffect(() => {
-    if (!open || defaultLocalId) return
+    if (open && trastero) {
+      setLocalId(String(trastero.localId))
+      setNumero(trastero.numero)
+      setNombre(trastero.nombre ?? "")
+      setSuperficie(String(trastero.superficie))
+      setPrecioMensual(String(trastero.precioMensual))
+    }
+  }, [open, trastero])
+
+  useEffect(() => {
+    if (!open || defaultLocalId || isEditing) return
     setLoadingLocales(true)
     fetchClient("/api/locales")
       .then((res) => (res.ok ? res.json() : { data: [] }))
       .then((data) => setLocales((data.data ?? []).map((l: { id: number; nombre: string }) => ({ id: l.id, nombre: l.nombre }))))
       .finally(() => setLoadingLocales(false))
-  }, [open, defaultLocalId])
+  }, [open, defaultLocalId, isEditing])
 
   const resetForm = () => {
     setError(null)
@@ -91,11 +114,14 @@ export function TrasteroFormModal({
     }
 
     try {
-      const res = await fetchClient("/api/trasteros", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
+      const res = await fetchClient(
+        isEditing ? `/api/trasteros/${trastero.id}` : "/api/trasteros",
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      )
 
       if (!res.ok) {
         const data = await res.json()
@@ -103,7 +129,7 @@ export function TrasteroFormModal({
         if (details) {
           setFieldErrors(details)
         } else {
-          setError(data.error?.message ?? "Error al crear trastero")
+          setError(data.error?.message ?? `Error al ${isEditing ? "actualizar" : "crear"} trastero`)
         }
         return
       }
@@ -121,7 +147,7 @@ export function TrasteroFormModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nuevo trastero</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar trastero" : "Nuevo trastero"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4">
@@ -229,7 +255,7 @@ export function TrasteroFormModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={saving || !localId}>
-              {saving ? "Guardando..." : "Crear trastero"}
+              {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear trastero"}
             </Button>
           </DialogFooter>
         </form>
