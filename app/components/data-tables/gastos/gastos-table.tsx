@@ -12,7 +12,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search } from "lucide-react"
+import { ArrowUpDown, Pencil, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,6 +43,7 @@ interface GastosTableProps {
   title?: string
   action?: React.ReactNode
   showSearch?: boolean
+  onEdit?: (gasto: Gasto) => void
 }
 
 const categoriaLabel: Record<string, string> = {
@@ -61,69 +62,89 @@ const metodoPagoLabel: Record<string, string> = {
   bizum: "Bizum",
 }
 
-const columns: ColumnDef<Gasto>[] = [
-  {
-    accessorKey: "fecha",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="-ml-3"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Fecha
-        <ArrowUpDown className="ml-1 size-3.5" />
-      </Button>
-    ),
-    cell: ({ row }) => formatDate(row.original.fecha),
-  },
-  {
-    accessorKey: "concepto",
-    header: "Concepto",
-    cell: ({ row }) => (
-      <span className="max-w-37.5 truncate">{row.original.concepto}</span>
-    ),
-  },
-  {
-    accessorKey: "importe",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="-ml-3"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Importe
-        <ArrowUpDown className="ml-1 size-3.5" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <span className="tabular-nums font-medium">{formatCurrency(row.original.importe)}</span>
-    ),
-  },
-  {
-    accessorKey: "categoria",
-    header: "Categoría",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="text-[10px]">
-        {categoriaLabel[row.original.categoria] ?? row.original.categoria}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "metodoPago",
-    header: "Método",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground text-xs">
-        {row.original.metodoPago ? (metodoPagoLabel[row.original.metodoPago] ?? row.original.metodoPago) : "-"}
-      </span>
-    ),
-  },
-]
+function getColumns(onEdit?: (gasto: Gasto) => void): ColumnDef<Gasto>[] {
+  return [
+    {
+      accessorKey: "fecha",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-3"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Fecha
+          <ArrowUpDown className="ml-1 size-3.5" />
+        </Button>
+      ),
+      cell: ({ row }) => formatDate(row.original.fecha),
+    },
+    {
+      accessorKey: "concepto",
+      header: "Concepto",
+      cell: ({ row }) => (
+        <span className="max-w-37.5 truncate">{row.original.concepto}</span>
+      ),
+    },
+    {
+      accessorKey: "importe",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-3"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Importe
+          <ArrowUpDown className="ml-1 size-3.5" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <span className="tabular-nums font-medium">{formatCurrency(row.original.importe)}</span>
+      ),
+    },
+    {
+      accessorKey: "categoria",
+      header: "Categoría",
+      cell: ({ row }) => (
+        <Badge variant="outline" className="text-[10px]">
+          {categoriaLabel[row.original.categoria] ?? row.original.categoria}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "metodoPago",
+      header: "Método",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-xs">
+          {row.original.metodoPago ? (metodoPagoLabel[row.original.metodoPago] ?? row.original.metodoPago) : "-"}
+        </span>
+      ),
+    },
+    ...(onEdit
+      ? [
+          {
+            id: "actions",
+            header: "",
+            cell: ({ row }: { row: { original: Gasto } }) => (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => onEdit(row.original)}
+              >
+                <Pencil className="size-3.5" />
+              </Button>
+            ),
+          } satisfies ColumnDef<Gasto>,
+        ]
+      : []),
+  ]
+}
 
-export function GastosTable({ gastos, title, action, showSearch = true }: GastosTableProps) {
+export function GastosTable({ gastos, title, action, showSearch = true, onEdit }: GastosTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
+  const [columns] = useState(() => getColumns(onEdit))
 
   const table = useReactTable({
     data: gastos,

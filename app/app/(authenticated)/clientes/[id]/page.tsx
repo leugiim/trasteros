@@ -9,7 +9,7 @@ import { usePageHeader } from "@/lib/page-header-context"
 import { Badge } from "@/components/ui/badge"
 import { ClienteFormModal } from "@/components/data-tables/clientes/cliente-form-modal"
 import { ContratoFormModal, type ContratoData } from "@/components/data-tables/contratos/contrato-form-modal"
-import { IngresoFormModal } from "@/components/data-tables/ingresos/ingreso-form-modal"
+import { IngresoFormModal, type IngresoData } from "@/components/data-tables/ingresos/ingreso-form-modal"
 import { ContratosTable, type ContratoWithRelations } from "@/components/data-tables/contratos/contratos-table"
 import { IngresosTable, type Ingreso } from "@/components/data-tables/ingresos/ingresos-table"
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,7 @@ export default function ClienteDetailPage() {
   const [contratoModalOpen, setContratoModalOpen] = useState(false)
   const [editingContrato, setEditingContrato] = useState<ContratoData | null>(null)
   const [ingresoModalOpen, setIngresoModalOpen] = useState(false)
+  const [editingIngreso, setEditingIngreso] = useState<IngresoData | null>(null)
   const [editingCliente, setEditingCliente] = useState(false)
   const { setHeaderContent } = usePageHeader()
 
@@ -184,13 +185,16 @@ export default function ClienteDetailPage() {
         {/* Right column: Ingresos */}
         <div>
           <IngresoFormModal
-            open={ingresoModalOpen}
-            onOpenChange={setIngresoModalOpen}
+            open={ingresoModalOpen || !!editingIngreso}
+            onOpenChange={(v) => {
+              if (!v) { setIngresoModalOpen(false); setEditingIngreso(null) }
+            }}
             contratos={contratos.map((c) => ({
               id: c.id!,
               trasteroNumero: c.trastero?.numero ?? `#${c.id}`,
               estado: c.estado,
             }))}
+            ingreso={editingIngreso}
             onSuccess={fetchData}
           />
           <IngresosTable
@@ -198,6 +202,7 @@ export default function ClienteDetailPage() {
             contratoTrasteroMap={contratoTrasteroMap}
             title="Ingresos"
             showSearch={false}
+            onEdit={(ingreso) => setEditingIngreso(ingreso)}
             action={
               <Button size="sm" onClick={() => setIngresoModalOpen(true)}>
                 <Plus className="size-4" />

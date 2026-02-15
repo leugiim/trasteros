@@ -12,7 +12,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search } from "lucide-react"
+import { ArrowUpDown, Pencil, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,6 +43,7 @@ interface IngresosTableProps {
   title?: string
   action?: React.ReactNode
   showSearch?: boolean
+  onEdit?: (ingreso: Ingreso) => void
 }
 
 const categoriaLabel: Record<string, string> = {
@@ -59,7 +60,7 @@ const metodoPagoLabel: Record<string, string> = {
   bizum: "Bizum",
 }
 
-function getColumns(contratoTrasteroMap: Map<number | undefined, string>): ColumnDef<Ingreso>[] {
+function getColumns(contratoTrasteroMap: Map<number | undefined, string>, onEdit?: (ingreso: Ingreso) => void): ColumnDef<Ingreso>[] {
   return [
     {
       accessorKey: "fechaPago",
@@ -127,13 +128,30 @@ function getColumns(contratoTrasteroMap: Map<number | undefined, string>): Colum
         </span>
       ),
     },
+    ...(onEdit
+      ? [
+          {
+            id: "actions",
+            header: "",
+            cell: ({ row }: { row: { original: Ingreso } }) => (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => onEdit(row.original)}
+              >
+                <Pencil className="size-3.5" />
+              </Button>
+            ),
+          } satisfies ColumnDef<Ingreso>,
+        ]
+      : []),
   ]
 }
 
-export function IngresosTable({ ingresos, contratoTrasteroMap, title, action, showSearch = true }: IngresosTableProps) {
+export function IngresosTable({ ingresos, contratoTrasteroMap, title, action, showSearch = true, onEdit }: IngresosTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
-  const [columns] = useState(() => getColumns(contratoTrasteroMap))
+  const [columns] = useState(() => getColumns(contratoTrasteroMap, onEdit))
 
   const table = useReactTable({
     data: ingresos,

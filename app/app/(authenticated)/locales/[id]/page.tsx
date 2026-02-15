@@ -17,8 +17,8 @@ import { TrasterosTable } from "@/components/data-tables/trasteros/trasteros-tab
 import { TrasteroFormModal } from "@/components/data-tables/trasteros/trastero-form-modal"
 import { IngresosTable, type Ingreso } from "@/components/data-tables/ingresos/ingresos-table"
 import { GastosTable, type Gasto } from "@/components/data-tables/gastos/gastos-table"
-import { GastoFormModal } from "@/components/data-tables/gastos/gasto-form-modal"
-import { IngresoFormModal } from "@/components/data-tables/ingresos/ingreso-form-modal"
+import { GastoFormModal, type GastoData } from "@/components/data-tables/gastos/gasto-form-modal"
+import { IngresoFormModal, type IngresoData } from "@/components/data-tables/ingresos/ingreso-form-modal"
 import { PrestamosTable, type Prestamo } from "@/components/data-tables/prestamos/prestamos-table"
 import { PrestamoFormModal } from "@/components/data-tables/prestamos/prestamo-form-modal"
 import { LocalFormModal } from "@/components/data-tables/locales/local-form-modal"
@@ -76,6 +76,8 @@ export default function LocalDetailPage() {
   const [ingresoModalOpen, setIngresoModalOpen] = useState(false)
   const [gastoModalOpen, setGastoModalOpen] = useState(false)
   const [editingLocal, setEditingLocal] = useState(false)
+  const [editingIngreso, setEditingIngreso] = useState<IngresoData | null>(null)
+  const [editingGasto, setEditingGasto] = useState<GastoData | null>(null)
   const { setHeaderContent } = usePageHeader()
 
   const fetchData = () => {
@@ -241,33 +243,40 @@ export default function LocalDetailPage() {
 
         <TabsContent value="finanzas">
           <IngresoFormModal
-            open={ingresoModalOpen}
-            onOpenChange={setIngresoModalOpen}
+            open={ingresoModalOpen || !!editingIngreso}
+            onOpenChange={(v) => {
+              if (!v) { setIngresoModalOpen(false); setEditingIngreso(null) }
+            }}
             contratos={contratos.map((c) => ({
               id: c.id,
               trasteroNumero: c.trastero?.numero ?? `#${c.id}`,
               clienteNombre: [c.cliente?.nombre, c.cliente?.apellidos].filter(Boolean).join(" ") || undefined,
               estado: c.estado,
             }))}
+            ingreso={editingIngreso}
             onSuccess={fetchData}
           />
           <GastoFormModal
-            open={gastoModalOpen}
-            onOpenChange={setGastoModalOpen}
+            open={gastoModalOpen || !!editingGasto}
+            onOpenChange={(v) => {
+              if (!v) { setGastoModalOpen(false); setEditingGasto(null) }
+            }}
             localId={local.id}
             prestamos={prestamos.map((p) => ({
               id: p.id,
               entidadBancaria: p.entidadBancaria,
               numeroPrestamo: p.numeroPrestamo,
             }))}
+            gasto={editingGasto}
             onSuccess={fetchData}
           />
           <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
             <IngresosTable
               ingresos={ingresos}
-              contratoTrasteroMap={new Map()}
+              contratoTrasteroMap={new Map(contratos.map((c) => [c.id, c.trastero?.numero ?? `#${c.id}`]))}
               title="Ingresos"
               showSearch={false}
+              onEdit={(ingreso) => setEditingIngreso(ingreso)}
               action={
                 <Button size="sm" onClick={() => setIngresoModalOpen(true)}>
                   <Plus className="size-4" />
@@ -279,6 +288,7 @@ export default function LocalDetailPage() {
               gastos={gastos}
               title="Gastos"
               showSearch={false}
+              onEdit={(gasto) => setEditingGasto(gasto)}
               action={
                 <Button size="sm" onClick={() => setGastoModalOpen(true)}>
                   <Plus className="size-4" />

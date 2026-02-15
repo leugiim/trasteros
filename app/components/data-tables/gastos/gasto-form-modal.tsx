@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { fetchClient } from "@/lib/api/fetch-client"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -35,11 +35,24 @@ export interface PrestamoOption {
   numeroPrestamo?: string | null
 }
 
+export interface GastoData {
+  id: number
+  localId: number
+  concepto: string
+  importe: number
+  fecha: string
+  categoria: string
+  descripcion?: string | null
+  metodoPago?: string | null
+  prestamoId?: number | null
+}
+
 interface GastoFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   localId: number
   prestamos?: PrestamoOption[]
+  gasto?: GastoData | null
   onSuccess?: () => void
 }
 
@@ -65,8 +78,10 @@ export function GastoFormModal({
   onOpenChange,
   localId,
   prestamos = [],
+  gasto,
   onSuccess,
 }: GastoFormModalProps) {
+  const isEditing = !!gasto
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
@@ -77,6 +92,18 @@ export function GastoFormModal({
   const [categoria, setCategoria] = useState("")
   const [metodoPago, setMetodoPago] = useState("")
   const [prestamoId, setPrestamoId] = useState("")
+
+  useEffect(() => {
+    if (open && gasto) {
+      setConcepto(gasto.concepto)
+      setDescripcion(gasto.descripcion ?? "")
+      setImporte(String(gasto.importe))
+      setFecha(new Date(gasto.fecha))
+      setCategoria(gasto.categoria)
+      setMetodoPago(gasto.metodoPago ?? "")
+      setPrestamoId(gasto.prestamoId ? String(gasto.prestamoId) : "")
+    }
+  }, [open, gasto])
 
   const resetForm = () => {
     setError(null)
@@ -113,11 +140,14 @@ export function GastoFormModal({
     }
 
     try {
-      const res = await fetchClient("/api/gastos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
+      const res = await fetchClient(
+        isEditing ? `/api/gastos/${gasto.id}` : "/api/gastos",
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      )
 
       if (!res.ok) {
         const data = await res.json()
@@ -125,7 +155,7 @@ export function GastoFormModal({
         if (details) {
           setFieldErrors(details)
         } else {
-          setError(data.error?.message ?? "Error al crear gasto")
+          setError(data.error?.message ?? `Error al ${isEditing ? "actualizar" : "crear"} gasto`)
         }
         return
       }
@@ -143,7 +173,7 @@ export function GastoFormModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nuevo gasto</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar gasto" : "Nuevo gasto"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4">
@@ -282,7 +312,7 @@ export function GastoFormModal({
               type="submit"
               disabled={saving || !categoria || !fecha}
             >
-              {saving ? "Guardando..." : "Crear gasto"}
+              {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear gasto"}
             </Button>
           </DialogFooter>
         </form>

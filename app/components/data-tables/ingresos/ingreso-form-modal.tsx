@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { fetchClient } from "@/lib/api/fetch-client"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -37,10 +37,21 @@ interface ContratoOption {
   estado?: string
 }
 
+export interface IngresoData {
+  id: number
+  contratoId: number
+  concepto: string
+  importe: number
+  fechaPago: string
+  categoria: string
+  metodoPago?: string | null
+}
+
 interface IngresoFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   contratos: ContratoOption[]
+  ingreso?: IngresoData | null
   onSuccess?: () => void
 }
 
@@ -62,8 +73,10 @@ export function IngresoFormModal({
   open,
   onOpenChange,
   contratos,
+  ingreso,
   onSuccess,
 }: IngresoFormModalProps) {
+  const isEditing = !!ingreso
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
@@ -73,6 +86,17 @@ export function IngresoFormModal({
   const [fechaPago, setFechaPago] = useState<Date | undefined>()
   const [categoria, setCategoria] = useState("mensualidad")
   const [metodoPago, setMetodoPago] = useState("")
+
+  useEffect(() => {
+    if (open && ingreso) {
+      setContratoId(String(ingreso.contratoId))
+      setConcepto(ingreso.concepto)
+      setImporte(String(ingreso.importe))
+      setFechaPago(new Date(ingreso.fechaPago))
+      setCategoria(ingreso.categoria)
+      setMetodoPago(ingreso.metodoPago ?? "")
+    }
+  }, [open, ingreso])
 
   const resetForm = () => {
     setError(null)
@@ -106,11 +130,14 @@ export function IngresoFormModal({
     }
 
     try {
-      const res = await fetchClient("/api/ingresos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
+      const res = await fetchClient(
+        isEditing ? `/api/ingresos/${ingreso.id}` : "/api/ingresos",
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      )
 
       if (!res.ok) {
         const data = await res.json()
@@ -118,7 +145,7 @@ export function IngresoFormModal({
         if (details) {
           setFieldErrors(details)
         } else {
-          setError(data.error?.message ?? "Error al crear ingreso")
+          setError(data.error?.message ?? `Error al ${isEditing ? "actualizar" : "crear"} ingreso`)
         }
         return
       }
@@ -136,7 +163,7 @@ export function IngresoFormModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nuevo ingreso</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar ingreso" : "Nuevo ingreso"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4">
@@ -275,7 +302,7 @@ export function IngresoFormModal({
               type="submit"
               disabled={saving || !contratoId || !fechaPago}
             >
-              {saving ? "Guardando..." : "Crear ingreso"}
+              {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear ingreso"}
             </Button>
           </DialogFooter>
         </form>

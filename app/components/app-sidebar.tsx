@@ -5,8 +5,6 @@ import {
   LayoutDashboard,
   Users,
   Building2,
-  Package,
-  Wallet,
   Warehouse,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
@@ -39,16 +37,6 @@ const data = {
       title: "Locales",
       url: "/locales",
       icon: Building2,
-    },
-    {
-      title: "Trasteros",
-      url: "/trasteros",
-      icon: Package,
-    },
-    {
-      title: "Finanzas",
-      url: "/finanzas",
-      icon: Wallet,
     },
   ] satisfies { title: string; url: string; icon: LucideIcon }[],
 }
