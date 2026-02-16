@@ -49,7 +49,6 @@ export default function TrasteroDetailPage() {
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [localNombre, setLocalNombre] = useState<string | null>(null)
   const [editingTrastero, setEditingTrastero] = useState(false)
   const [editingContrato, setEditingContrato] = useState<ContratoData | null>(null)
   const [ingresoModalOpen, setIngresoModalOpen] = useState(false)
@@ -57,7 +56,7 @@ export default function TrasteroDetailPage() {
   const { setHeaderContent } = usePageHeader()
 
   const fetchData = () => {
-    setLoading(true)
+    if (!trastero) setLoading(true)
     Promise.all([
       fetchClient(`/api/trasteros/${id}`).then((res) => {
         if (!res.ok) throw new Error("Trastero no encontrado")
@@ -91,7 +90,6 @@ export default function TrasteroDetailPage() {
         .then((res) => (res.ok ? res.json() : null))
         .then((localData) => {
           const nombre = localData?.nombre ?? `Local #${trastero.localId}`
-          setLocalNombre(nombre)
           const estado = trastero.estado ?? ""
           setHeaderContent(
             <Breadcrumb>

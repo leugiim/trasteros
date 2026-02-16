@@ -43,7 +43,7 @@ export default function ClienteDetailPage() {
   const { setHeaderContent } = usePageHeader()
 
   const fetchData = () => {
-    setLoading(true)
+    if (!cliente) setLoading(true)
     Promise.all([
       fetchClient(`/api/clientes/${id}`).then((res) => {
         if (!res.ok) throw new Error("Cliente no encontrado")

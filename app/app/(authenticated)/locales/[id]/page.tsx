@@ -93,7 +93,7 @@ export default function LocalDetailPage() {
   const { setHeaderContent } = usePageHeader()
 
   const fetchData = () => {
-    setLoading(true)
+    if (!local) setLoading(true)
     Promise.all([
       fetchClient(`/api/locales/${id}`).then((res) => {
         if (!res.ok) throw new Error("Local no encontrado")
