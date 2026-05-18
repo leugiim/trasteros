@@ -11,6 +11,9 @@ if [ -n "$JWT_PUBLIC_KEY_BASE64" ]; then
     echo "$JWT_PUBLIC_KEY_BASE64" | base64 -d > /var/www/html/config/jwt/public.pem
 fi
 
+# Run migrations
+php bin/console doctrine:migrations:migrate --no-interaction --env=prod
+
 # Warmup cache
 php bin/console cache:warmup --env=prod --no-debug
 
