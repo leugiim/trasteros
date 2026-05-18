@@ -3,13 +3,13 @@ set -e
 
 echo "==> Decoding JWT keys..."
 if [ -n "$JWT_PRIVATE_KEY_BASE64" ]; then
-    echo "$JWT_PRIVATE_KEY_BASE64" | tr -d '\r\n ' | base64 -d > /var/www/html/config/jwt/private.pem
+    printf '%s' "$JWT_PRIVATE_KEY_BASE64" | tr -d '\r\n ' | base64 --ignore-garbage -d > /var/www/html/config/jwt/private.pem
     chmod 600 /var/www/html/config/jwt/private.pem
     echo "    private.pem OK"
 fi
 
 if [ -n "$JWT_PUBLIC_KEY_BASE64" ]; then
-    echo "$JWT_PUBLIC_KEY_BASE64" | tr -d '\r\n ' | base64 -d > /var/www/html/config/jwt/public.pem
+    printf '%s' "$JWT_PUBLIC_KEY_BASE64" | tr -d '\r\n ' | base64 --ignore-garbage -d > /var/www/html/config/jwt/public.pem
     echo "    public.pem OK"
 fi
 
