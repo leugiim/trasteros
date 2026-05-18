@@ -18,6 +18,7 @@ php bin/console doctrine:migrations:migrate --no-interaction --env=prod
 
 echo "==> Warming up cache..."
 php bin/console cache:warmup --env=prod --no-debug
+chown -R www-data:www-data /var/www/html/var
 
 echo "==> Starting server..."
 exec "$@"
