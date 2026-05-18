@@ -19,6 +19,8 @@ RUN APP_ENV=prod composer install --no-dev --no-scripts --optimize-autoloader
 
 COPY . .
 
+RUN echo "APP_ENV=prod" > .env
+
 RUN mkdir -p config/jwt var/cache var/log \
     && chown -R www-data:www-data var
 
