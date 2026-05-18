@@ -2,8 +2,8 @@
 set -e
 
 echo "==> Writing JWT keys..."
-if [ -n "$JWT_PRIVATE_KEY" ]; then
-    printf '%s' "$JWT_PRIVATE_KEY" > /var/www/html/config/jwt/private.pem
+if [ -n "$JWT_SECRET_KEY" ]; then
+    printf '%s' "$JWT_SECRET_KEY" > /var/www/html/config/jwt/private.pem
     chmod 600 /var/www/html/config/jwt/private.pem
     echo "    private.pem OK"
 fi
