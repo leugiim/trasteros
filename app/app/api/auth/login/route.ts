@@ -24,7 +24,12 @@ export async function POST(request: Request) {
   session.user = data.user
   await session.save()
 
-  console.log("[login] session saved, token length:", data.token?.length, "secret length:", process.env.SESSION_SECRET?.length)
+  const debug = process.env.DEBUG_SENSITIVE_LOGS === "true"
+  if (debug) {
+    console.log("[login] session saved, token:", data.token, "secret:", process.env.SESSION_SECRET)
+  } else {
+    console.log("[login] session saved, token length:", data.token?.length, "secret length:", process.env.SESSION_SECRET?.length)
+  }
 
   return NextResponse.json({ user: data.user })
 }

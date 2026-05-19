@@ -98,8 +98,17 @@ final class RequestLoggerSubscriber implements EventSubscriberInterface
         ]);
     }
 
+    private function isDebug(): bool
+    {
+        return filter_var($_ENV['DEBUG_SENSITIVE_LOGS'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
+    }
+
     private function maskSensitiveFields(array $data): array
     {
+        if ($this->isDebug()) {
+            return $data;
+        }
+
         foreach ($data as $key => $value) {
             if (in_array($key, self::SENSITIVE_BODY_FIELDS, true)) {
                 $data[$key] = '***';
@@ -113,6 +122,10 @@ final class RequestLoggerSubscriber implements EventSubscriberInterface
 
     private function maskSensitiveHeaders(array $headers): array
     {
+        if ($this->isDebug()) {
+            return $headers;
+        }
+
         foreach ($headers as $name => $value) {
             if (in_array(strtolower($name), self::SENSITIVE_HEADERS, true)) {
                 $headers[$name] = ['***'];

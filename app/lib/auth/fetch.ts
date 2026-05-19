@@ -36,7 +36,13 @@ async function tryRefresh(session: SessionData & { save: () => Promise<void>, de
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
 
-  console.log("[authFetch] session token length:", session.token?.length, "user:", session.user?.email)
+  const debug = process.env.DEBUG_SENSITIVE_LOGS === "true"
+
+  if (debug) {
+    console.log("[authFetch] session:", { token: session.token, user: session.user?.email })
+  } else {
+    console.log("[authFetch] session token length:", session.token?.length, "user:", session.user?.email)
+  }
 
   if (!session.token) {
     console.log("[authFetch] no token, returning 401 locally")
@@ -46,15 +52,19 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
     )
   }
 
-  console.log("[authFetch] →", options.method ?? "GET", url)
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${session.token}`,
-    },
-  })
-  console.log("[authFetch] ←", res.status, res.url, res.redirected ? "(redirected)" : "")
+  const requestHeaders = {
+    ...options.headers,
+    Authorization: `Bearer ${session.token}`,
+  }
+
+  if (debug) {
+    console.log("[authFetch] →", options.method ?? "GET", url, { headers: requestHeaders, body: options.body })
+  } else {
+    console.log("[authFetch] →", options.method ?? "GET", url)
+  }
+
+  const res = await fetch(url, { ...options, headers: requestHeaders })
+  console.log("[authFetch] ←", res.status, res.url, res.redirected ? "(redirected!)" : "")
 
   if (res.status === 401) {
     if (!refreshPromise) {
