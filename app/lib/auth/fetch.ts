@@ -39,12 +39,14 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
   console.log("[authFetch] session token length:", session.token?.length, "user:", session.user?.email)
 
   if (!session.token) {
+    console.log("[authFetch] no token, returning 401 locally")
     return new Response(
       JSON.stringify({ error: { message: "No autenticado", code: "NOT_AUTHENTICATED" } }),
       { status: 401, headers: { "Content-Type": "application/json" } }
     )
   }
 
+  console.log("[authFetch] →", options.method ?? "GET", url)
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -52,6 +54,7 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
       Authorization: `Bearer ${session.token}`,
     },
   })
+  console.log("[authFetch] ←", res.status, res.url, res.redirected ? "(redirected)" : "")
 
   if (res.status === 401) {
     if (!refreshPromise) {
