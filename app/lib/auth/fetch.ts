@@ -36,6 +36,8 @@ async function tryRefresh(session: SessionData & { save: () => Promise<void>, de
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
 
+  console.log("[authFetch] session token length:", session.token?.length, "user:", session.user?.email)
+
   if (!session.token) {
     return new Response(
       JSON.stringify({ error: { message: "No autenticado", code: "NOT_AUTHENTICATED" } }),
