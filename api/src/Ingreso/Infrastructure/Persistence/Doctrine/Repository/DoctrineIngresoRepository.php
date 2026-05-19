@@ -279,23 +279,16 @@ final class DoctrineIngresoRepository extends ServiceEntityRepository implements
      */
     public function getImportesGroupedByDay(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): array
     {
-        $results = $this->createQueryBuilder('i')
-            ->select('SUBSTRING(i.fechaPago, 1, 10) as date, SUM(i.importe) as total')
-            ->where('i.fechaPago BETWEEN :desde AND :hasta')
-            ->andWhere('i.deletedAt IS NULL')
-            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
-            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
-            ->groupBy('date')
-            ->orderBy('date', 'ASC')
-            ->getQuery()
-            ->getResult();
+        $conn = $this->getEntityManager()->getConnection();
+        $results = $conn->executeQuery(
+            "SELECT TO_CHAR(fecha_pago, 'YYYY-MM-DD') as date, SUM(importe) as total
+             FROM ingreso
+             WHERE fecha_pago BETWEEN :desde AND :hasta AND deleted_at IS NULL
+             GROUP BY date ORDER BY date ASC",
+            ['desde' => $desde->format('Y-m-d'), 'hasta' => $hasta->format('Y-m-d')]
+        )->fetchAllAssociative();
 
-        return array_map(function ($row) {
-            return [
-                'date' => $row['date'],
-                'total' => (float) $row['total']
-            ];
-        }, $results);
+        return array_map(fn($row) => ['date' => $row['date'], 'total' => (float) $row['total']], $results);
     }
 
     /**
@@ -303,22 +296,15 @@ final class DoctrineIngresoRepository extends ServiceEntityRepository implements
      */
     public function getImportesGroupedByMonth(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): array
     {
-        $results = $this->createQueryBuilder('i')
-            ->select('SUBSTRING(i.fechaPago, 1, 7) as date, SUM(i.importe) as total')
-            ->where('i.fechaPago BETWEEN :desde AND :hasta')
-            ->andWhere('i.deletedAt IS NULL')
-            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
-            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
-            ->groupBy('date')
-            ->orderBy('date', 'ASC')
-            ->getQuery()
-            ->getResult();
+        $conn = $this->getEntityManager()->getConnection();
+        $results = $conn->executeQuery(
+            "SELECT TO_CHAR(fecha_pago, 'YYYY-MM') as date, SUM(importe) as total
+             FROM ingreso
+             WHERE fecha_pago BETWEEN :desde AND :hasta AND deleted_at IS NULL
+             GROUP BY date ORDER BY date ASC",
+            ['desde' => $desde->format('Y-m-d'), 'hasta' => $hasta->format('Y-m-d')]
+        )->fetchAllAssociative();
 
-        return array_map(function ($row) {
-            return [
-                'date' => $row['date'],
-                'total' => (float) $row['total']
-            ];
-        }, $results);
+        return array_map(fn($row) => ['date' => $row['date'], 'total' => (float) $row['total']], $results);
     }
 }

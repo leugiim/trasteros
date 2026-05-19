@@ -255,23 +255,16 @@ final class DoctrineGastoRepository extends ServiceEntityRepository implements G
      */
     public function getImportesGroupedByDay(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): array
     {
-        $results = $this->createQueryBuilder('g')
-            ->select('SUBSTRING(g.fecha, 1, 10) as date, SUM(g.importe) as total')
-            ->where('g.fecha BETWEEN :desde AND :hasta')
-            ->andWhere('g.deletedAt IS NULL')
-            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
-            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
-            ->groupBy('date')
-            ->orderBy('date', 'ASC')
-            ->getQuery()
-            ->getResult();
+        $conn = $this->getEntityManager()->getConnection();
+        $results = $conn->executeQuery(
+            "SELECT TO_CHAR(fecha, 'YYYY-MM-DD') as date, SUM(importe) as total
+             FROM gasto
+             WHERE fecha BETWEEN :desde AND :hasta AND deleted_at IS NULL
+             GROUP BY date ORDER BY date ASC",
+            ['desde' => $desde->format('Y-m-d'), 'hasta' => $hasta->format('Y-m-d')]
+        )->fetchAllAssociative();
 
-        return array_map(function ($row) {
-            return [
-                'date' => $row['date'],
-                'total' => (float) $row['total']
-            ];
-        }, $results);
+        return array_map(fn($row) => ['date' => $row['date'], 'total' => (float) $row['total']], $results);
     }
 
     /**
@@ -279,22 +272,15 @@ final class DoctrineGastoRepository extends ServiceEntityRepository implements G
      */
     public function getImportesGroupedByMonth(\DateTimeImmutable $desde, \DateTimeImmutable $hasta): array
     {
-        $results = $this->createQueryBuilder('g')
-            ->select('SUBSTRING(g.fecha, 1, 7) as date, SUM(g.importe) as total')
-            ->where('g.fecha BETWEEN :desde AND :hasta')
-            ->andWhere('g.deletedAt IS NULL')
-            ->setParameter('desde', $desde, Types::DATE_IMMUTABLE)
-            ->setParameter('hasta', $hasta, Types::DATE_IMMUTABLE)
-            ->groupBy('date')
-            ->orderBy('date', 'ASC')
-            ->getQuery()
-            ->getResult();
+        $conn = $this->getEntityManager()->getConnection();
+        $results = $conn->executeQuery(
+            "SELECT TO_CHAR(fecha, 'YYYY-MM') as date, SUM(importe) as total
+             FROM gasto
+             WHERE fecha BETWEEN :desde AND :hasta AND deleted_at IS NULL
+             GROUP BY date ORDER BY date ASC",
+            ['desde' => $desde->format('Y-m-d'), 'hasta' => $hasta->format('Y-m-d')]
+        )->fetchAllAssociative();
 
-        return array_map(function ($row) {
-            return [
-                'date' => $row['date'],
-                'total' => (float) $row['total']
-            ];
-        }, $results);
+        return array_map(fn($row) => ['date' => $row['date'], 'total' => (float) $row['total']], $results);
     }
 }
