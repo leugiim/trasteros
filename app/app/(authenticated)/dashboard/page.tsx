@@ -27,6 +27,11 @@ import {
 
 type Trastero = components["schemas"]["Trastero"]
 type Local = components["schemas"]["Local"]
+type DashboardStats = components["schemas"]["DashboardStats"]
+type RentabilidadLocalItem = {
+  localId?: number
+  financiero?: { ingresosMensualesPotenciales?: number; ingresosMensualesActuales?: number }
+}
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
@@ -38,6 +43,8 @@ export default function DashboardPage() {
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
   const [gastos, setGastos] = useState<Gasto[]>([])
   const [prestamos, setPrestamos] = useState<Prestamo[]>([])
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [rentabilidadLocales, setRentabilidadLocales] = useState<RentabilidadLocalItem[]>([])
 
   useEffect(() => {
     setLoading(true)
@@ -49,8 +56,10 @@ export default function DashboardPage() {
       fetchClient("/api/ingresos").then((r) => r.ok ? r.json() : { data: [] }),
       fetchClient("/api/gastos").then((r) => r.ok ? r.json() : { data: [] }),
       fetchClient("/api/prestamos").then((r) => r.ok ? r.json() : { data: [] }),
+      fetchClient("/api/dashboard/stats").then((r) => r.ok ? r.json() : null),
+      fetchClient("/api/dashboard/rentabilidad").then((r) => r.ok ? r.json() : { locales: [] }),
     ])
-      .then(([loc, tra, cli, con, ing, gas, pre]) => {
+      .then(([loc, tra, cli, con, ing, gas, pre, statsData, rentData]) => {
         setLocales(loc.data ?? [])
         setTrasteros(tra.data ?? [])
         setClientes(cli.data ?? [])
@@ -58,6 +67,8 @@ export default function DashboardPage() {
         setIngresos(ing.data ?? [])
         setGastos(gas.data ?? [])
         setPrestamos(pre.data ?? [])
+        setStats(statsData)
+        setRentabilidadLocales(rentData?.locales ?? [])
       })
       .finally(() => setLoading(false))
   }, [])
@@ -78,19 +89,20 @@ export default function DashboardPage() {
     availableYears.push(String(lowest))
   }
 
-  // Year-filtered data
+  // Year-filtered data (still local, no backend endpoint for year-filtered totals)
   const filteredIngresos = ingresos.filter((i) => i.fechaPago.startsWith(year))
   const filteredGastos = gastos.filter((g) => g.fecha.startsWith(year))
 
-  // Entidades
-  const totalTrasteros = trasteros.length
-  const ocupados = trasteros.filter((t) => t.estado === "ocupado").length
-  const disponibles = trasteros.filter((t) => t.estado === "disponible").length
-  const tasaOcupacion = totalTrasteros > 0 ? (ocupados / totalTrasteros) * 100 : 0
-  const contratosActivos = contratos.filter((c) => c.estado === "activo").length
-  const fianzasPendientes = contratos.filter((c) => c.estado === "activo" && !c.fianzaPagada).length
+  // Entidades: prefer backend stats (occupancy based on active contracts, not estado field)
+  const totalTrasteros = stats?.trasteros?.total ?? trasteros.length
+  const ocupados = stats?.trasteros?.ocupados ?? trasteros.filter((t) => t.estado === "ocupado").length
+  const disponibles = stats?.trasteros?.disponibles ?? trasteros.filter((t) => t.estado === "disponible").length
+  const tasaOcupacion = stats?.trasteros?.tasaOcupacion ?? (totalTrasteros > 0 ? (ocupados / totalTrasteros) * 100 : 0)
+  const contratosActivos = stats?.contratos?.activos ?? contratos.filter((c) => c.estado === "activo").length
+  const fianzasPendientes = stats?.contratos?.fianzasPendientes ?? contratos.filter((c) => c.estado === "activo" && !c.fianzaPagada).length
+  const totalContratos = stats?.contratos?.total ?? contratos.length
 
-  // Financiero (filtered)
+  // Financiero (filtered by year, local computation)
   const totalIngresosYear = filteredIngresos.reduce((sum, i) => sum + i.importe, 0)
   const totalGastosYear = filteredGastos.reduce((sum, i) => sum + i.importe, 0)
   const balanceYear = totalIngresosYear - totalGastosYear
@@ -102,10 +114,14 @@ export default function DashboardPage() {
   const pctAmortizado = totalADevolver > 0 ? (totalAmortizado / totalADevolver) * 100 : 0
   const prestamosActivos = prestamos.filter((p) => p.estado === "activo").length
 
-  // Rentabilidad (filtered)
-  const ingresoMensualPotencial = trasteros
-    .filter((t) => t.estado === "ocupado")
-    .reduce((sum, t) => sum + (t.precioMensual ?? 0), 0)
+  // Ingresos mensuales: sum across all locals from rentabilidad endpoint
+  const ingresoMensualPotencial = rentabilidadLocales.length > 0
+    ? rentabilidadLocales.reduce((sum, l) => sum + (l.financiero?.ingresosMensualesPotenciales ?? 0), 0)
+    : trasteros.reduce((sum, t) => sum + (t.precioMensual ?? 0), 0)
+  const ingresoMensualActual = rentabilidadLocales.reduce(
+    (sum, l) => sum + (l.financiero?.ingresosMensualesActuales ?? 0), 0
+  )
+
   const inversionTotal = locales.reduce((sum, l) => sum + (l.precioCompra ?? 0), 0)
   const rentabilidad =
     inversionTotal > 0 ? ((totalIngresosYear - totalGastosYear) / inversionTotal) * 100 : null
@@ -153,7 +169,7 @@ export default function DashboardPage() {
           <StatCard label="Clientes" value={String(clientes.length)} icon={Users} iconClassName="text-violet-500" />
           <StatCard
             label="Contratos"
-            value={String(contratos.length)}
+            value={String(totalContratos)}
             detail={`${contratosActivos} activos · ${fianzasPendientes} fianzas pend.`}
             icon={FileText}
             iconClassName="text-amber-500"
@@ -180,8 +196,9 @@ export default function DashboardPage() {
             valueClassName={balanceYear >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}
           />
           <StatCard
-            label="Ingreso potencial/mes"
-            value={formatCurrency(ingresoMensualPotencial)}
+            label="Ingreso actual/mes"
+            value={formatCurrency(ingresoMensualActual)}
+            detail={`Potencial: ${formatCurrency(ingresoMensualPotencial)}`}
             icon={CircleDollarSign}
             iconClassName="text-emerald-500"
           />
