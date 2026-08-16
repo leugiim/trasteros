@@ -43,7 +43,7 @@ final readonly class GetRentabilidadQueryHandler
             $balance = $ingresosTotales - $gastosTotales;
 
             $ingresosMensualesPotenciales = $this->trasteroRepository->getTotalIngresosMensualesByLocal($localId);
-            $ingresosMensualesActuales = $this->trasteroRepository->getTotalIngresosMensualesOcupadosByLocal($localId);
+            $ingresosMensualesActuales = $this->contratoRepository->getTotalIngresosMensualesActivosByLocal($localId);
 
             $rentabilidadPorLocal[] = [
                 'localId' => $localId,

@@ -71,6 +71,17 @@ interface Local {
 
 type Trastero = components["schemas"]["Trastero"]
 
+type LocalRentabilidad = {
+  trasteros?: { total?: number; ocupados?: number; tasaOcupacion?: number }
+  financiero?: {
+    ingresosTotales?: number
+    gastosTotales?: number
+    balance?: number
+    ingresosMensualesPotenciales?: number
+    ingresosMensualesActuales?: number
+  }
+}
+
 export default function LocalDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -82,6 +93,7 @@ export default function LocalDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [contratos, setContratos] = useState<ContratoWithRelations[]>([])
+  const [rentabilidadLocal, setRentabilidadLocal] = useState<LocalRentabilidad | null>(null)
   const [editingContrato, setEditingContrato] = useState<ContratoData | null>(null)
   const [trasteroModalOpen, setTrasteroModalOpen] = useState(false)
   const [prestamoModalOpen, setPrestamoModalOpen] = useState(false)
@@ -114,8 +126,11 @@ export default function LocalDetailPage() {
       fetchClient(`/api/contratos`).then((res) =>
         res.ok ? res.json() : { data: [] }
       ),
+      fetchClient(`/api/dashboard/rentabilidad`).then((res) =>
+        res.ok ? res.json() : { locales: [] }
+      ),
     ])
-      .then(([localData, trasterosData, ingresosData, gastosData, prestamosData, contratosData]) => {
+      .then(([localData, trasterosData, ingresosData, gastosData, prestamosData, contratosData, rentabilidadData]) => {
         setLocal(localData)
         setTrasteros(trasterosData.data ?? [])
         setIngresos(ingresosData.data ?? [])
@@ -126,6 +141,10 @@ export default function LocalDetailPage() {
         setContratos(
           (contratosData.data ?? []).filter((c: { trastero?: { id: number } }) => trasteroIds.has(c.trastero?.id))
         )
+        const localRent = (rentabilidadData.locales ?? []).find(
+          (l: { localId?: number }) => l.localId === Number(id)
+        )
+        setRentabilidadLocal(localRent ?? null)
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -242,6 +261,7 @@ export default function LocalDetailPage() {
             prestamos={prestamos}
             contratos={contratos}
             local={local}
+            rentabilidadLocal={rentabilidadLocal}
           />
         </TabsContent>
 
@@ -380,6 +400,7 @@ function MetricasPanel({
   prestamos,
   contratos,
   local,
+  rentabilidadLocal,
 }: {
   trasteros: Trastero[]
   ingresos: Ingreso[]
@@ -387,30 +408,39 @@ function MetricasPanel({
   prestamos: Prestamo[]
   contratos: { estado?: string }[]
   local: Local
+  rentabilidadLocal: LocalRentabilidad | null
 }) {
-  const totalTrasteros = trasteros.length
-  const ocupados = trasteros.filter((t) => t.estado === "ocupado").length
+  // Trasteros: prefer backend counts (based on active contracts) over local estado field
+  const totalTrasteros = rentabilidadLocal?.trasteros?.total ?? trasteros.length
+  const ocupados = rentabilidadLocal?.trasteros?.ocupados ?? trasteros.filter((t) => t.estado === "ocupado").length
   const disponibles = trasteros.filter((t) => t.estado === "disponible").length
-  const tasaOcupacion = totalTrasteros > 0 ? (ocupados / totalTrasteros) * 100 : 0
+  const tasaOcupacion = rentabilidadLocal?.trasteros?.tasaOcupacion
+    ?? (totalTrasteros > 0 ? (ocupados / totalTrasteros) * 100 : 0)
 
-  const totalIngresos = ingresos.reduce((sum, i) => sum + i.importe, 0)
-  const totalGastos = gastos.reduce((sum, g) => sum + g.importe, 0)
-  const balance = totalIngresos - totalGastos
+  // Financiero: prefer backend totals
+  const totalIngresos = rentabilidadLocal?.financiero?.ingresosTotales
+    ?? ingresos.reduce((sum, i) => sum + i.importe, 0)
+  const totalGastos = rentabilidadLocal?.financiero?.gastosTotales
+    ?? gastos.reduce((sum, g) => sum + g.importe, 0)
+  const balance = rentabilidadLocal?.financiero?.balance ?? (totalIngresos - totalGastos)
 
+  // Préstamos: always local (not in rentabilidad endpoint)
   const totalCapitalPrestamos = prestamos.reduce((sum, p) => sum + p.totalADevolver, 0)
   const totalAmortizado = prestamos.reduce((sum, p) => sum + (p.amortizado ?? 0), 0)
   const pendienteAmortizar = totalCapitalPrestamos - totalAmortizado
   const pctAmortizado = totalCapitalPrestamos > 0 ? (totalAmortizado / totalCapitalPrestamos) * 100 : 0
 
+  // Contratos: always local (not in rentabilidad endpoint)
   const contratosActivos = contratos.filter((c) => c.estado === "activo").length
 
-  const ingresoMensualPotencial = trasteros
-    .filter((t) => t.estado === "ocupado")
-    .reduce((sum, t) => sum + (t.precioMensual ?? 0), 0)
+  // Ingreso mensual: from backend (potencial = todos los trasteros, actual = contratos activos hoy)
+  const ingresoMensualPotencial = rentabilidadLocal?.financiero?.ingresosMensualesPotenciales
+    ?? trasteros.reduce((sum, t) => sum + (t.precioMensual ?? 0), 0)
+  const ingresoMensualActual = rentabilidadLocal?.financiero?.ingresosMensualesActuales
 
   const rentabilidad =
     local.precioCompra && local.precioCompra > 0
-      ? (totalIngresos - totalGastos) / local.precioCompra * 100
+      ? balance / local.precioCompra * 100
       : null
 
   return (
@@ -470,7 +500,8 @@ function MetricasPanel({
       <div>
         <p className="text-muted-foreground mb-3 text-xs font-medium uppercase tracking-wide">Rentabilidad</p>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCard label="Ingreso mensual potencial" value={formatCurrency(ingresoMensualPotencial)} icon={CircleDollarSign} iconClassName="text-emerald-500" />
+          <StatCard label="Ingreso mensual actual" value={formatCurrency(ingresoMensualActual)} icon={BadgeDollarSign} iconClassName="text-emerald-500" />
+          <StatCard label="Ingreso mensual potencial" value={formatCurrency(ingresoMensualPotencial)} icon={CircleDollarSign} iconClassName="text-sky-500" />
           <StatCard label="Precio compra" value={formatCurrency(local.precioCompra)} icon={ShoppingCart} iconClassName="text-slate-500" />
           {rentabilidad !== null && (
             <StatCard

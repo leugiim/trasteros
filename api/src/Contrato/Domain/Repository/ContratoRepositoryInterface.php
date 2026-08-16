@@ -68,4 +68,9 @@ interface ContratoRepositoryInterface
     public function countTrasterosReservados(): int;
 
     public function count(array $criteria = []): int;
+
+    /**
+     * Suma el precioMensual de contratos activos hoy para trasteros de un local
+     */
+    public function getTotalIngresosMensualesActivosByLocal(int $localId): float;
 }

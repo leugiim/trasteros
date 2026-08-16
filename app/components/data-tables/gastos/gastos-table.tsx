@@ -60,6 +60,7 @@ const metodoPagoLabel: Record<string, string> = {
   transferencia: "Transferencia",
   tarjeta: "Tarjeta",
   bizum: "Bizum",
+  dommiciliacion: "Domiciliación",
 }
 
 function getColumns(onEdit?: (gasto: Gasto) => void): ColumnDef<Gasto>[] {
@@ -123,20 +124,20 @@ function getColumns(onEdit?: (gasto: Gasto) => void): ColumnDef<Gasto>[] {
     },
     ...(onEdit
       ? [
-          {
-            id: "actions",
-            header: "",
-            cell: ({ row }: { row: { original: Gasto } }) => (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => onEdit(row.original)}
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-            ),
-          } satisfies ColumnDef<Gasto>,
-        ]
+        {
+          id: "actions",
+          header: "",
+          cell: ({ row }: { row: { original: Gasto } }) => (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => onEdit(row.original)}
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+          ),
+        } satisfies ColumnDef<Gasto>,
+      ]
       : []),
   ]
 }
@@ -161,112 +162,112 @@ export function GastosTable({ gastos, title, action, showSearch = true, onEdit }
 
   return (
     <Card className="p-6">
-    <div className="flex flex-col gap-4">
-      {(title || showSearch || action) && (
-        <div className="flex flex-col gap-4">
-          {title && (
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">{title}</h3>
-              {action}
-            </div>
-          )}
-          {(showSearch || (!title && action)) && (
-            <div className="flex items-center justify-between">
-              {showSearch ? (
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
-                    <Input
-                      placeholder="Buscar gastos..."
-                      value={globalFilter}
-                      onChange={(e) => setGlobalFilter(e.target.value)}
-                      className="w-64 pl-9"
-                    />
+      <div className="flex flex-col gap-4">
+        {(title || showSearch || action) && (
+          <div className="flex flex-col gap-4">
+            {title && (
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">{title}</h3>
+                {action}
+              </div>
+            )}
+            {(showSearch || (!title && action)) && (
+              <div className="flex items-center justify-between">
+                {showSearch ? (
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
+                      <Input
+                        placeholder="Buscar gastos..."
+                        value={globalFilter}
+                        onChange={(e) => setGlobalFilter(e.target.value)}
+                        className="w-64 pl-9"
+                      />
+                    </div>
+                    <span className="text-muted-foreground text-sm">
+                      {gastos.length} gastos
+                    </span>
                   </div>
-                  <span className="text-muted-foreground text-sm">
-                    {gastos.length} gastos
-                  </span>
-                </div>
-              ) : <div />}
-              {!title && action}
-            </div>
-          )}
-        </div>
-      )}
+                ) : <div />}
+                {!title && action}
+              </div>
+            )}
+          </div>
+        )}
 
-      <div className="overflow-hidden rounded-lg border">
-        <Table>
-          <TableHeader className="bg-muted">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
+        <div className="overflow-hidden rounded-lg border">
+          <Table>
+            <TableHeader className="bg-muted">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
                           header.column.columnDef.header,
                           header.getContext()
                         )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No se encontraron gastos.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground text-sm">
-            Página {table.getState().pagination.pageIndex + 1} de{" "}
-            {table.getPageCount()}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Siguiente
-            </Button>
-          </div>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No se encontraron gastos.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-      )}
-    </div>
+
+        {table.getPageCount() > 1 && (
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-sm">
+              Página {table.getState().pagination.pageIndex + 1} de{" "}
+              {table.getPageCount()}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </Card>
   )
 }

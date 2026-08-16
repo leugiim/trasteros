@@ -268,4 +268,28 @@ final class DoctrineContratoRepository extends ServiceEntityRepository implement
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    public function getTotalIngresosMensualesActivosByLocal(int $localId): float
+    {
+        $hoy = new \DateTimeImmutable('today');
+
+        $result = $this->getEntityManager()->createQuery(
+            'SELECT SUM(c.precioMensual)
+             FROM App\Contrato\Domain\Model\Contrato c
+             JOIN c.trastero t
+             JOIN t.local l
+             WHERE c.estado != :cancelado
+             AND c.fechaInicio <= :hoy
+             AND (c.fechaFin IS NULL OR c.fechaFin >= :hoy)
+             AND c.deletedAt IS NULL
+             AND t.deletedAt IS NULL
+             AND l.id = :localId'
+        )
+            ->setParameter('cancelado', ContratoEstado::CANCELADO)
+            ->setParameter('hoy', $hoy, 'date_immutable')
+            ->setParameter('localId', $localId)
+            ->getSingleScalarResult();
+
+        return $result !== null ? (float) $result : 0.0;
+    }
 }
