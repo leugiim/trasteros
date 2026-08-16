@@ -60,7 +60,7 @@ const metodoPagoLabel: Record<string, string> = {
   transferencia: "Transferencia",
   tarjeta: "Tarjeta",
   bizum: "Bizum",
-  dommiciliacion: "Domiciliación",
+  domiciliacion: "Domiciliación",
 }
 
 function getColumns(onEdit?: (gasto: Gasto) => void): ColumnDef<Gasto>[] {
