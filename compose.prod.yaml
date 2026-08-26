@@ -13,6 +13,10 @@
 #
 # Además, ./jwt/private.pem y ./jwt/public.pem deben existir en el host
 # (generados una vez, no versionados — ver README) antes de levantar `api`.
+# private.pem debe ser legible por www-data DENTRO del contenedor, no solo
+# por el dueño en el host (chmod 644, no 600) — Apache/PHP corren como
+# www-data, un usuario distinto de quien genera la clave. docker-entrypoint.sh
+# lo comprueba al arrancar y falla alto y claro si no lo es.
 
 services:
   app:
