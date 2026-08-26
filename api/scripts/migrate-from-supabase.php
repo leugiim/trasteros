@@ -25,9 +25,14 @@ declare(strict_types=1);
 function pdoFromPostgresUrl(string $url): PDO
 {
     $parts = parse_url($url);
+    // Force IPv4: gethostbyname() only resolves A records, never AAAA.
+    // Docker's default bridge network here has no IPv6 route, and some
+    // Supabase hosts resolve to an IPv6 address first, which then fails
+    // with "Network is unreachable".
+    $host = gethostbyname($parts['host']);
     $dsn = sprintf(
         'pgsql:host=%s;port=%d;dbname=%s',
-        $parts['host'],
+        $host,
         $parts['port'] ?? 5432,
         ltrim($parts['path'] ?? '', '/')
     );
