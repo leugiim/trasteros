@@ -1,16 +1,11 @@
 #!/bin/bash
 set -e
 
-echo "==> Writing JWT keys..."
-if [ -n "$JWT_SECRET_KEY" ]; then
-    printf '%s' "$JWT_SECRET_KEY" > /var/www/html/config/jwt/private.pem
-    chmod 600 /var/www/html/config/jwt/private.pem
-    echo "    private.pem OK"
-fi
-
-if [ -n "$JWT_PUBLIC_KEY" ]; then
-    printf '%s' "$JWT_PUBLIC_KEY" > /var/www/html/config/jwt/public.pem
-    echo "    public.pem OK"
+echo "==> Checking JWT keys..."
+if [ ! -f "$JWT_SECRET_KEY" ] || [ ! -f "$JWT_PUBLIC_KEY" ]; then
+    echo "    ERROR: JWT_SECRET_KEY/JWT_PUBLIC_KEY must point to existing .pem files"
+    echo "    (mount them into the container — see compose.prod.yaml)"
+    exit 1
 fi
 
 echo "==> Running migrations..."

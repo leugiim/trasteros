@@ -9,8 +9,10 @@
 #
 # Variables esperadas en el .env de producción (no versionado):
 #   MARIADB_DATABASE, MARIADB_USER, MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD
-#   APP_SECRET, JWT_SECRET_KEY, JWT_PUBLIC_KEY, JWT_PASSPHRASE
-#   SESSION_SECRET
+#   APP_SECRET, JWT_PASSPHRASE, SESSION_SECRET
+#
+# Además, ./jwt/private.pem y ./jwt/public.pem deben existir en el host
+# (generados una vez, no versionados — ver README) antes de levantar `api`.
 
 services:
   app:
@@ -39,9 +41,14 @@ services:
       APP_ENV: prod
       APP_SECRET: ${APP_SECRET}
       DATABASE_URL: mysql://${MARIADB_USER}:${MARIADB_PASSWORD}@database:3306/${MARIADB_DATABASE}?serverVersion=${MARIADB_VERSION:-11.4}-MariaDB&charset=utf8mb4
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_SECRET_KEY: /var/www/html/config/jwt/private.pem
+      JWT_PUBLIC_KEY: /var/www/html/config/jwt/public.pem
       JWT_PASSPHRASE: ${JWT_PASSPHRASE}
+    volumes:
+      # Generated once on the host (see README/runbook), never committed —
+      # mounted read-only instead of round-tripping PEM content through a
+      # single-line .env var.
+      - ./jwt:/var/www/html/config/jwt:ro
     depends_on:
       database:
         condition: service_healthy
