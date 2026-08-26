@@ -96,11 +96,18 @@ class ContratoControllerTest extends ApiTestCase
 
     public function testCreateContrato(): void
     {
+        // Relative to today, not a fixed past date: Contrato::estadoCalculado()
+        // derives 'estado' by comparing fechaInicio/fechaFin against "now", so
+        // a hardcoded fechaFin becomes stale and this test starts asserting
+        // the wrong estado once that date is in the past.
+        $fechaInicio = new \DateTimeImmutable('-1 month');
+        $fechaFin = new \DateTimeImmutable('+1 year');
+
         $response = $this->post('/api/contratos', [
             'trasteroId' => $this->trasteroId,
             'clienteId' => $this->clienteId,
-            'fechaInicio' => '2024-01-01',
-            'fechaFin' => '2024-12-31',
+            'fechaInicio' => $fechaInicio->format('Y-m-d'),
+            'fechaFin' => $fechaFin->format('Y-m-d'),
             'precioMensual' => 100.0,
             'fianza' => 200.0,
             'fianzaPagada' => true,
