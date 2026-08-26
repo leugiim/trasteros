@@ -38,7 +38,7 @@ php bin/console lexik:jwt:generate-keypair
 - **API Platform 4.x** with Doctrine ORM for automatic CRUD endpoints
 - **JWT Authentication** via LexikJWTAuthenticationBundle (keys in `config/jwt/`)
 - **CORS** handled by NelmioCorsBundle
-- **Database**: SQLite by default (configurable via `DATABASE_URL` in `.env`)
+- **Database**: MariaDB in dev/prod (Docker container `trasteros_db_dev`/`trasteros_db_prod`, see `compose.yaml`), configurable via `DATABASE_URL`. Tests use SQLite (`.env.test`) for speed/isolation.
 
 ## Directory Structure
 

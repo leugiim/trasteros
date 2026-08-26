@@ -1,0 +1,75 @@
+
+# Stack de producción de trasteros (API + frontend + DB). Se levanta desde
+# /srv/trasteros como `leugiim` (`docker compose -f compose.prod.yaml up -d
+# --build`), nunca desde el entorno de desarrollo. Solo `app` se une a la
+# red externa `caddy_net` (gestionada por el stack de Caddy compartido en
+# leugiim-vps-devops) — `api` y `database` quedan solo en la red interna del
+# proyecto, sin exponerse ni a Caddy ni al host: Next.js hace de único punto
+# de entrada público y llama a la API por red interna (patrón BFF).
+#
+# Variables esperadas en el .env de producción (no versionado):
+#   MARIADB_DATABASE, MARIADB_USER, MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD
+#   APP_SECRET, JWT_SECRET_KEY, JWT_PUBLIC_KEY, JWT_PASSPHRASE
+#   SESSION_SECRET
+
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: trasteros_app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      SESSION_SECRET: ${SESSION_SECRET}
+      API_URL: http://api:80
+    depends_on:
+      - api
+    networks:
+      - default
+      - caddy_net
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: trasteros_api
+    restart: unless-stopped
+    environment:
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET}
+      DATABASE_URL: mysql://${MARIADB_USER}:${MARIADB_PASSWORD}@database:3306/${MARIADB_DATABASE}?serverVersion=${MARIADB_VERSION:-11.4}-MariaDB&charset=utf8mb4
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_PASSPHRASE: ${JWT_PASSPHRASE}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - default
+
+  database:
+    image: mariadb:${MARIADB_VERSION:-11.4}
+    container_name: trasteros_db_prod
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - database_data:/var/lib/mysql:rw
+    networks:
+      - default
+
+networks:
+  caddy_net:
+    external: true
+
+volumes:
+  database_data:

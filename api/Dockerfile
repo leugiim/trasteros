@@ -1,8 +1,8 @@
 FROM php:8.4-apache
 
 RUN apt-get update && apt-get install -y \
-    libpq-dev libicu-dev libzip-dev unzip \
-    && docker-php-ext-install pdo pdo_pgsql intl opcache zip \
+    libicu-dev libzip-dev unzip \
+    && docker-php-ext-install pdo pdo_mysql intl opcache zip \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 

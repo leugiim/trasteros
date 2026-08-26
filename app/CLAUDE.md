@@ -82,9 +82,24 @@ import { Home01Icon } from "@hugeicons/react"
 
 ## API Integration
 
-Backend API runs at `http://localhost:8000/api/` (see `/api` project).
+Backend API runs at `http://localhost:8000/api/` in dev (see `/api` project).
 
 Key endpoints:
 - `POST /api/auth/login` - Authentication
 - `GET /api/dashboard/stats` - Dashboard statistics
 - Full API reference in `/api/openapi.json`
+
+The app never calls the API from the browser. Every `app/api/**/route.ts`
+handler is a server-side BFF route that holds the JWT in an `iron-session`
+httpOnly cookie (`lib/auth/session.ts`, `lib/auth/fetch.ts`) and forwards
+requests to `API_URL` — the client only ever talks to this Next.js server.
+
+## Deployment
+
+Production build is a standalone Next.js server (`output: "standalone"` in
+`next.config.ts`), containerized via `Dockerfile` — not a static export,
+because the BFF session logic needs a running Node process. See
+`leugiim-vps-devops` for the shared Caddy stack and `/compose.prod.yaml` at
+the repo root for how `trasteros_app` is wired to `trasteros_api` (internal
+network only) and to Caddy. Required runtime env vars: `SESSION_SECRET`,
+`API_URL` (see `.env.example`).

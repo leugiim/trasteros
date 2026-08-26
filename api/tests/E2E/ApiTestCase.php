@@ -38,10 +38,14 @@ abstract class ApiTestCase extends WebTestCase
             unlink($dbPath);
         }
 
-        // Run migrations
+        // Build schema straight from the entity mapping rather than replaying
+        // migration files: migrations are written in the target platform's
+        // raw SQL (MySQL/MariaDB), which isn't portable to the SQLite
+        // database used here for tests. doctrine:schema:create generates
+        // correct DDL for whichever platform is actually connected.
         $application->run(
             new ArrayInput([
-                'command' => 'doctrine:migrations:migrate',
+                'command' => 'doctrine:schema:create',
                 '--no-interaction' => true,
                 '--env' => 'test',
             ]),
