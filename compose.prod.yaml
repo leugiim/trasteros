@@ -40,6 +40,13 @@ services:
     environment:
       APP_ENV: prod
       APP_SECRET: ${APP_SECRET}
+      # The Dockerfile overwrites the image's .env down to just APP_ENV=prod
+      # (RUN echo "APP_ENV=prod" > .env), so every other env(...) referenced
+      # in config/packages/*.yaml without a default must be passed here
+      # explicitly — DEFAULT_URI (routing.yaml) and CORS_ALLOW_ORIGIN
+      # (nelmio_cors.yaml) were missing and crash-looped the container.
+      DEFAULT_URI: https://trasteros.leugiim.es
+      CORS_ALLOW_ORIGIN: '^https://trasteros\.leugiim\.es$'
       # Doctrine requires a full major.minor.patch here — "${MARIADB_VERSION}"
       # alone (e.g. "11.4") isn't valid, even though it's a fine floating tag
       # for the image below. The exact patch doesn't need to match what's
