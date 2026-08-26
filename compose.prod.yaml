@@ -40,7 +40,12 @@ services:
     environment:
       APP_ENV: prod
       APP_SECRET: ${APP_SECRET}
-      DATABASE_URL: mysql://${MARIADB_USER}:${MARIADB_PASSWORD}@database:3306/${MARIADB_DATABASE}?serverVersion=${MARIADB_VERSION:-11.4}-MariaDB&charset=utf8mb4
+      # Doctrine requires a full major.minor.patch here — "${MARIADB_VERSION}"
+      # alone (e.g. "11.4") isn't valid, even though it's a fine floating tag
+      # for the image below. The exact patch doesn't need to match what's
+      # actually running; Doctrine only uses this for major.minor feature
+      # detection.
+      DATABASE_URL: mysql://${MARIADB_USER}:${MARIADB_PASSWORD}@database:3306/${MARIADB_DATABASE}?serverVersion=11.4.2-MariaDB&charset=utf8mb4
       JWT_SECRET_KEY: /var/www/html/config/jwt/private.pem
       JWT_PUBLIC_KEY: /var/www/html/config/jwt/public.pem
       JWT_PASSPHRASE: ${JWT_PASSPHRASE}
