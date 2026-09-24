@@ -1,36 +1,27 @@
 import { getIronSession } from "iron-session"
 import { cookies } from "next/headers"
-import { API_URL, sessionOptions, type SessionData } from "@/lib/auth/session"
+import { refreshTokens } from "@/lib/auth/refresh"
+import { sessionOptions, type SessionData } from "@/lib/auth/session"
 
-let refreshPromise: Promise<boolean> | null = null
+type Session = SessionData & { save: () => Promise<void>; destroy: () => void }
 
-async function tryRefresh(session: SessionData & { save: () => Promise<void>, destroy: () => void }): Promise<boolean> {
+async function tryRefresh(session: Session): Promise<boolean> {
   if (!session.refreshToken) {
     return false
   }
 
-  try {
-    const res = await fetch(`${API_URL}/api/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: session.refreshToken }),
-    })
+  const result = await refreshTokens(session.refreshToken)
 
-    if (!res.ok) {
-      session.destroy()
-      return false
-    }
-
-    const data = await res.json()
-    session.token = data.token
-    session.refreshToken = data.refreshToken
-    session.user = data.user
-    await session.save()
-    return true
-  } catch {
+  if (!result) {
     session.destroy()
     return false
   }
+
+  session.token = result.token
+  session.refreshToken = result.refreshToken
+  session.user = result.user
+  await session.save()
+  return true
 }
 
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
@@ -67,21 +58,17 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
   console.log("[authFetch] ←", res.status, res.url, res.redirected ? "(redirected!)" : "")
 
   if (res.status === 401) {
-    if (!refreshPromise) {
-      refreshPromise = tryRefresh(session).finally(() => {
-        refreshPromise = null
-      })
-    }
-
-    const refreshed = await refreshPromise
+    // Refreshes this request's own session (see refreshTokens for how
+    // concurrent refreshes of the same token are shared)
+    const refreshed = await tryRefresh(session)
 
     if (refreshed) {
-      const freshSession = await getIronSession<SessionData>(await cookies(), sessionOptions)
+      // tryRefresh already put the new token in this request's session
       return fetch(url, {
         ...options,
         headers: {
           ...options.headers,
-          Authorization: `Bearer ${freshSession.token}`,
+          Authorization: `Bearer ${session.token}`,
         },
       })
     }
