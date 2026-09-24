@@ -1,3 +1,8 @@
+# Explicit project name: without it Compose uses the directory name ("api"),
+# which collides with other projects laid out the same way (e.g.
+# pokemon-battle-tower/api) and makes them take over each other's containers.
+name: trasteros
+
 
 services:
 ###> doctrine/doctrine-bundle ###
@@ -24,4 +29,7 @@ services:
 volumes:
 ###> doctrine/doctrine-bundle ###
   database_data:
+    # Keep the volume created when the project was still called "api", so the
+    # existing dev data isn't lost after setting the project name
+    name: api_database_data
 ###< doctrine/doctrine-bundle ###
