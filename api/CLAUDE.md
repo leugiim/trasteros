@@ -40,6 +40,18 @@ php bin/console lexik:jwt:generate-keypair
 - **CORS** handled by NelmioCorsBundle
 - **Database**: MariaDB in dev/prod (Docker container `trasteros_db_dev`/`trasteros_db_prod`, see `compose.yaml`), configurable via `DATABASE_URL`. Tests use SQLite (`.env.test`) for speed/isolation.
 
+## Authentication
+
+- **Secure by default**: `security.yaml` requires a valid JWT for everything under `/api` except the routes listed as `PUBLIC_ACCESS` (login, refresh, health, API docs). A new public endpoint must be added there explicitly
+- `#[Auth]` on a controller (or method) still does the role checks (`#[Auth(roles: [...])]`) and sets the `authenticated_user` / `authenticated_user_id` request attributes
+- `UserChecker` rejects inactive users at the firewall
+- Every 401 uses the API error format with code `UNAUTHORIZED` (`JwtErrorSubscriber`)
+- Refresh tokens (30 days) are **single use**: `/api/auth/refresh` deletes the one it receives and returns a new one. They're stored as SHA-256 hashes, and each login is its own session (logging in doesn't end the user's other sessions)
+
+## Domain errors
+
+Every domain exception extends one of `src/Shared/Domain/Exception/`, which decides its HTTP status: `NotFoundError` (404), `ConflictError` (409), `ValidationError` (400 `VALIDATION_ERROR`, `details` keyed by `field()`), `AuthenticationError` (401), `ForbiddenError` (403). Each one declares its `errorCode()` (e.g. `CLIENTE_NOT_FOUND`). `MessengerExceptionSubscriber` turns them into responses, whether Messenger wraps them or not. An exception that doesn't extend one of these ends up as a 500.
+
 ## Migrations
 
 Migrations are **not transactional**: MariaDB commits implicitly on every DDL statement, so a transaction can't make a schema migration atomic anyway (Doctrine only warns that it was "already committed"). `transactional: false` in `doctrine_migrations.yaml` makes `doctrine:migrations:diff`/`generate` add an `isTransactional()` returning `false` to every new migration (the existing one has it written by hand). A **data-only** migration (INSERT/UPDATE/DELETE, no DDL) should return `true` there instead. Don't mix DDL and data changes in the same migration.
@@ -136,7 +148,7 @@ Full OpenAPI 3.0 specification available at `openapi.json` (regenerate with `php
 | 401 | `INVALID_CREDENTIALS` | Wrong email/password |
 | 403 | `USER_INACTIVE` | User account is disabled |
 | 404 | `{ENTITY}_NOT_FOUND` | Resource not found (e.g., `CLIENTE_NOT_FOUND`, `TRASTERO_NOT_FOUND`) |
-| 409 | `{ENTITY}_ALREADY_EXISTS` or `VALIDATION_ERROR` | Duplicate resource or field conflict |
+| 409 | `{ENTITY}_ALREADY_EXISTS`, `TRASTERO_ALREADY_RENTED`, `ALREADY_EXISTS` (DNI/NIE) or `VALIDATION_ERROR` (email) | Duplicate resource, field conflict or a trastero that already has an active contract |
 
 ### Main Entities
 
