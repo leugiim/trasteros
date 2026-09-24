@@ -17,6 +17,12 @@ final class Version20260826201926 extends AbstractMigration
         return '';
     }
 
+    public function isTransactional(): bool
+    {
+        // DDL only: MariaDB commits implicitly, see doctrine_migrations.yaml
+        return false;
+    }
+
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs

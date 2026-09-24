@@ -40,6 +40,10 @@ php bin/console lexik:jwt:generate-keypair
 - **CORS** handled by NelmioCorsBundle
 - **Database**: MariaDB in dev/prod (Docker container `trasteros_db_dev`/`trasteros_db_prod`, see `compose.yaml`), configurable via `DATABASE_URL`. Tests use SQLite (`.env.test`) for speed/isolation.
 
+## Migrations
+
+Migrations are **not transactional**: MariaDB commits implicitly on every DDL statement, so a transaction can't make a schema migration atomic anyway (Doctrine only warns that it was "already committed"). `transactional: false` in `doctrine_migrations.yaml` makes `doctrine:migrations:diff`/`generate` add an `isTransactional()` returning `false` to every new migration (the existing one has it written by hand). A **data-only** migration (INSERT/UPDATE/DELETE, no DDL) should return `true` there instead. Don't mix DDL and data changes in the same migration.
+
 ## Directory Structure
 
 - `src/Entity/` - Doctrine entities with API Platform attributes
