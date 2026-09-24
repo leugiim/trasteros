@@ -45,10 +45,12 @@ final readonly class LoginCommandHandler
 
         $token = $this->jwtManager->create($user);
 
-        $this->refreshTokenRepository->deleteByUserId($user->id()->value);
-        $refreshToken = RefreshToken::create($user->id()->value);
+        // Each login is its own session: other devices keep their tokens.
+        // Expired tokens (from any user) are cleaned up here instead.
+        $this->refreshTokenRepository->deleteExpired();
+        [$refreshToken, $plainRefreshToken] = RefreshToken::issue($user->id()->value);
         $this->refreshTokenRepository->save($refreshToken);
 
-        return LoginResponse::create($token, $refreshToken->token(), $user);
+        return LoginResponse::create($token, $plainRefreshToken, $user);
     }
 }

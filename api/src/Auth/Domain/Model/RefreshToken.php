@@ -6,6 +6,11 @@ namespace App\Auth\Domain\Model;
 
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Long-lived token used to get a new JWT. Only a SHA-256 hash of the token is
+ * stored (in the `token` column), so a database leak doesn't leak usable
+ * tokens. Each one is single use: refreshing replaces it with a new one.
+ */
 #[ORM\Entity]
 #[ORM\Table(name: 'refresh_tokens')]
 class RefreshToken
@@ -15,6 +20,7 @@ class RefreshToken
     #[ORM\Column]
     private ?int $id = null;
 
+    /** SHA-256 hex of the token handed to the client */
     #[ORM\Column(length: 128, unique: true)]
     private string $token;
 
@@ -35,22 +41,26 @@ class RefreshToken
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    public static function create(string $userId, int $ttlDays = 30): self
+    /**
+     * @return array{0: self, 1: string} The entity and the plain token, which
+     *                                   is only available at creation time
+     */
+    public static function issue(string $userId, int $ttlDays = 30): array
     {
-        $token = bin2hex(random_bytes(64));
+        $plainToken = bin2hex(random_bytes(64));
         $expiresAt = new \DateTimeImmutable("+{$ttlDays} days");
 
-        return new self($token, $userId, $expiresAt);
+        return [new self(self::hash($plainToken), $userId, $expiresAt), $plainToken];
+    }
+
+    public static function hash(string $plainToken): string
+    {
+        return hash('sha256', $plainToken);
     }
 
     public function id(): ?int
     {
         return $this->id;
-    }
-
-    public function token(): string
-    {
-        return $this->token;
     }
 
     public function userId(): string

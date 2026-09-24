@@ -10,7 +10,10 @@ interface RefreshTokenRepositoryInterface
 {
     public function save(RefreshToken $refreshToken): void;
 
-    public function findByToken(string $token): ?RefreshToken;
+    /** Looks the token up by its hash */
+    public function findByToken(string $plainToken): ?RefreshToken;
+
+    public function remove(RefreshToken $refreshToken): void;
 
     public function deleteByUserId(string $userId): void;
 
