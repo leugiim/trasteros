@@ -18,6 +18,10 @@
 # www-data, un usuario distinto de quien genera la clave. docker-entrypoint.sh
 # lo comprueba al arrancar y falla alto y claro si no lo es.
 
+# Explicit project name, so it doesn't depend on the checkout directory
+# (/srv/trasteros). The dev database uses "trasteros_dev" (api/compose.yaml).
+name: trasteros
+
 services:
   app:
     build:

@@ -1,8 +1,9 @@
-# Explicit project name: without it Compose uses the directory name ("api"),
-# which collides with other projects laid out the same way (e.g.
-# pokemon-battle-tower/api) and makes them take over each other's containers.
-name: trasteros
-
+# Explicit project name, different from production's ("trasteros", see
+# compose.prod.yaml). Without it Compose uses the directory name ("api"),
+# which collides with other projects laid out the same way; and it must not
+# be "trasteros" either: both projects have a "database" service, so running
+# this file would take over trasteros_db_prod.
+name: trasteros_dev
 
 services:
 ###> doctrine/doctrine-bundle ###
