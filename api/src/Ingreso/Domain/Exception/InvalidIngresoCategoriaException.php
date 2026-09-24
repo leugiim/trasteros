@@ -4,10 +4,17 @@ declare(strict_types=1);
 
 namespace App\Ingreso\Domain\Exception;
 
-final class InvalidIngresoCategoriaException extends \DomainException
+use App\Shared\Domain\Exception\ValidationError;
+
+final class InvalidIngresoCategoriaException extends ValidationError
 {
     public static function withValue(string $value): self
     {
         return new self(sprintf('Invalid ingreso categoria: %s. Valid values are: mensualidad, fianza, penalizacion, otros', $value));
+    }
+
+    public function field(): string
+    {
+        return 'ingresoCategoria';
     }
 }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Users\Domain\Exception;
 
-final class UserNotFoundException extends \DomainException
+use App\Shared\Domain\Exception\NotFoundError;
+
+final class UserNotFoundException extends NotFoundError
 {
     private function __construct(string $message)
     {
@@ -19,5 +21,10 @@ final class UserNotFoundException extends \DomainException
     public static function withEmail(string $email): self
     {
         return new self(sprintf('User with email "%s" not found', $email));
+    }
+
+    public function errorCode(): string
+    {
+        return 'USER_NOT_FOUND';
     }
 }

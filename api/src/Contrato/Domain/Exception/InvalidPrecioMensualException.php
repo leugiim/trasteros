@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace App\Contrato\Domain\Exception;
 
-final class InvalidPrecioMensualException extends \InvalidArgumentException
+use App\Shared\Domain\Exception\ValidationError;
+
+final class InvalidPrecioMensualException extends ValidationError
 {
+
+    public function field(): string
+    {
+        return 'precioMensual';
+    }
 }

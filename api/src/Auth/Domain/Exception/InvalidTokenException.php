@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Auth\Domain\Exception;
 
-final class InvalidTokenException extends \DomainException
+use App\Shared\Domain\Exception\AuthenticationError;
+
+final class InvalidTokenException extends AuthenticationError
 {
     private function __construct(string $message)
     {
@@ -29,5 +31,10 @@ final class InvalidTokenException extends \DomainException
     public static function malformed(): self
     {
         return new self('Formato de token inválido');
+    }
+
+    public function errorCode(): string
+    {
+        return 'UNAUTHORIZED';
     }
 }

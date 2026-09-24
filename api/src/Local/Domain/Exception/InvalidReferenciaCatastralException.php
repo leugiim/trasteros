@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Local\Domain\Exception;
 
-final class InvalidReferenciaCatastralException extends \InvalidArgumentException
+use App\Shared\Domain\Exception\ValidationError;
+
+final class InvalidReferenciaCatastralException extends ValidationError
 {
     public static function empty(): self
     {
@@ -17,5 +19,10 @@ final class InvalidReferenciaCatastralException extends \InvalidArgumentExceptio
             'La referencia catastral "%s" no puede superar los 50 caracteres',
             $referencia
         ));
+    }
+
+    public function field(): string
+    {
+        return 'referenciaCatastral';
     }
 }

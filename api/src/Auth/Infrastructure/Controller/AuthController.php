@@ -9,15 +9,10 @@ use App\Auth\Application\Command\RefreshToken\RefreshTokenCommand;
 use App\Auth\Application\DTO\LoginRequest;
 use App\Auth\Application\DTO\LoginResponse;
 use App\Auth\Application\DTO\RefreshTokenRequest;
-use App\Auth\Domain\Exception\InvalidCredentialsException;
-use App\Auth\Domain\Exception\InvalidRefreshTokenException;
-use App\Auth\Domain\Exception\UserInactiveException;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
-use Symfony\Component\Messenger\Exception\HandlerFailedException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Routing\Attribute\Route;
@@ -63,41 +58,17 @@ final class AuthController extends AbstractController
     )]
     public function login(#[MapRequestPayload] LoginRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new LoginCommand(
-                email: $request->email,
-                password: $request->password
-            ));
+        // Invalid credentials (401) and inactive users (403) are domain errors,
+        // turned into responses by MessengerExceptionSubscriber
+        $envelope = $this->commandBus->dispatch(new LoginCommand(
+            email: $request->email,
+            password: $request->password
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        /** @var LoginResponse $response */
+        $response = $envelope->last(HandledStamp::class)->getResult();
 
-            /** @var LoginResponse $response */
-            $response = $handledStamp->getResult();
-
-            return $this->json($response->toArray());
-        } catch (HandlerFailedException $e) {
-            foreach ($e->getWrappedExceptions() as $nestedException) {
-                if ($nestedException instanceof InvalidCredentialsException) {
-                    return $this->json([
-                        'error' => [
-                            'message' => $nestedException->getMessage(),
-                            'code' => 'INVALID_CREDENTIALS',
-                        ],
-                    ], Response::HTTP_UNAUTHORIZED);
-                }
-
-                if ($nestedException instanceof UserInactiveException) {
-                    return $this->json([
-                        'error' => [
-                            'message' => $nestedException->getMessage(),
-                            'code' => 'USER_INACTIVE',
-                        ],
-                    ], Response::HTTP_FORBIDDEN);
-                }
-            }
-
-            throw $e;
-        }
+        return $this->json($response->toArray());
     }
 
     #[Route('/refresh', name: 'auth_refresh', methods: ['POST'])]
@@ -126,34 +97,15 @@ final class AuthController extends AbstractController
     )]
     public function refresh(#[MapRequestPayload] RefreshTokenRequest $request): JsonResponse
     {
-        try {
-            $envelope = $this->commandBus->dispatch(new RefreshTokenCommand(
-                refreshToken: $request->refreshToken
-            ));
+        // INVALID_REFRESH_TOKEN / EXPIRED_REFRESH_TOKEN (401) come from
+        // InvalidRefreshTokenException, see MessengerExceptionSubscriber
+        $envelope = $this->commandBus->dispatch(new RefreshTokenCommand(
+            refreshToken: $request->refreshToken
+        ));
 
-            $handledStamp = $envelope->last(HandledStamp::class);
+        /** @var LoginResponse $response */
+        $response = $envelope->last(HandledStamp::class)->getResult();
 
-            /** @var LoginResponse $response */
-            $response = $handledStamp->getResult();
-
-            return $this->json($response->toArray());
-        } catch (HandlerFailedException $e) {
-            foreach ($e->getWrappedExceptions() as $nestedException) {
-                if ($nestedException instanceof InvalidRefreshTokenException) {
-                    $code = str_contains($nestedException->getMessage(), 'expirado')
-                        ? 'EXPIRED_REFRESH_TOKEN'
-                        : 'INVALID_REFRESH_TOKEN';
-
-                    return $this->json([
-                        'error' => [
-                            'message' => $nestedException->getMessage(),
-                            'code' => $code,
-                        ],
-                    ], Response::HTTP_UNAUTHORIZED);
-                }
-            }
-
-            throw $e;
-        }
+        return $this->json($response->toArray());
     }
 }

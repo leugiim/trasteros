@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Auth\Domain\Exception;
 
-final class UserInactiveException extends \DomainException
+use App\Shared\Domain\Exception\ForbiddenError;
+
+final class UserInactiveException extends ForbiddenError
 {
     private function __construct(string $message)
     {
@@ -14,5 +16,10 @@ final class UserInactiveException extends \DomainException
     public static function withEmail(string $email): self
     {
         return new self(sprintf('El usuario "%s" está desactivado', $email));
+    }
+
+    public function errorCode(): string
+    {
+        return 'USER_INACTIVE';
     }
 }

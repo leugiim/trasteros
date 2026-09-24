@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Auth\Domain\Exception;
 
-final class InvalidCredentialsException extends \DomainException
+use App\Shared\Domain\Exception\AuthenticationError;
+
+final class InvalidCredentialsException extends AuthenticationError
 {
     private function __construct(string $message)
     {
@@ -14,5 +16,10 @@ final class InvalidCredentialsException extends \DomainException
     public static function create(): self
     {
         return new self('Credenciales inválidas');
+    }
+
+    public function errorCode(): string
+    {
+        return 'INVALID_CREDENTIALS';
     }
 }
