@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Cliente\Domain\Exception;
 
-final class InvalidDniNieException extends \InvalidArgumentException
+use App\Shared\Domain\Exception\ValidationError;
+
+final class InvalidDniNieException extends ValidationError
 {
     public static function empty(): self
     {
@@ -19,5 +21,10 @@ final class InvalidDniNieException extends \InvalidArgumentException
     public static function invalidCheckLetter(string $dniNie): self
     {
         return new self(sprintf('El DNI/NIE "%s" tiene una letra de control inválida', $dniNie));
+    }
+
+    public function field(): string
+    {
+        return 'dniNie';
     }
 }

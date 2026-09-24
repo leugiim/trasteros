@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace App\Contrato\Domain\Exception;
 
-final class InvalidContratoDateException extends \InvalidArgumentException
+use App\Shared\Domain\Exception\ValidationError;
+
+final class InvalidContratoDateException extends ValidationError
 {
+
+    public function field(): string
+    {
+        return 'contratoDate';
+    }
 }

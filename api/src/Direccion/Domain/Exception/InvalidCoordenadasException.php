@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Direccion\Domain\Exception;
 
-final class InvalidCoordenadasException extends \DomainException
+use App\Shared\Domain\Exception\ValidationError;
+
+final class InvalidCoordenadasException extends ValidationError
 {
     public static function incomplete(): self
     {
@@ -19,5 +21,10 @@ final class InvalidCoordenadasException extends \DomainException
     public static function invalidLongitud(float $longitud): self
     {
         return new self(sprintf('La longitud "%f" debe estar entre -180 y 180 grados', $longitud));
+    }
+
+    public function field(): string
+    {
+        return 'coordenadas';
     }
 }

@@ -53,6 +53,25 @@ class TrasteroControllerTest extends ApiTestCase
         $this->assertResponseStatusCode(401, $response);
     }
 
+    public function testCreateDuplicatedTrasteroReturnsConflict(): void
+    {
+        $payload = [
+            'localId' => $this->localId,
+            'numero' => 'DUP-01',
+            'superficie' => 5.5,
+            'precioMensual' => 50.0,
+            'estado' => 'disponible',
+        ];
+        $this->assertResponseStatusCode(201, $this->post('/api/trasteros', $payload));
+
+        $response = $this->post('/api/trasteros', $payload);
+
+        // Used to be an unhandled 500 (the exception name didn't match the
+        // old name-based error mapping)
+        $this->assertResponseStatusCode(409, $response);
+        $this->assertHasError($response, 'TRASTERO_ALREADY_EXISTS');
+    }
+
     public function testCreateTrastero(): void
     {
         $response = $this->post('/api/trasteros', [

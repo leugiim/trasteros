@@ -22,11 +22,18 @@ security:
             pattern: ^/api
             stateless: true
             provider: app_user_provider
+            user_checker: App\Auth\Infrastructure\Security\UserChecker
             jwt: ~
 
+    # Secure by default: everything under /api needs a valid JWT unless it's
+    # listed here as public. #[Auth] on controllers still adds the role
+    # checks and the authenticated_user request attribute, but forgetting it
+    # no longer leaves a route open. Only the first matching rule applies.
     access_control:
-        - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/(login|refresh)$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/health$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/(docs|doc|doc\.json)($|[./]), roles: PUBLIC_ACCESS }
+        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

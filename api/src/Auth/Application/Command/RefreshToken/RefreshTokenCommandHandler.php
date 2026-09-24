@@ -31,24 +31,27 @@ final readonly class RefreshTokenCommandHandler
             throw InvalidRefreshTokenException::invalid();
         }
 
+        // Rotation: a refresh token can only be used once. The user's other
+        // sessions (other devices) keep their own tokens.
+        $this->refreshTokenRepository->remove($existingToken);
+
         if ($existingToken->isExpired()) {
-            $this->refreshTokenRepository->deleteByUserId($existingToken->userId());
             throw InvalidRefreshTokenException::expired();
         }
 
         $user = $this->userRepository->findById(UserId::fromString($existingToken->userId()));
 
         if ($user === null || !$user->isActivo()) {
+            // A deleted or deactivated user loses every session
             $this->refreshTokenRepository->deleteByUserId($existingToken->userId());
             throw InvalidRefreshTokenException::invalid();
         }
 
         $jwt = $this->jwtManager->create($user);
 
-        $this->refreshTokenRepository->deleteByUserId($user->id()->value);
-        $newRefreshToken = RefreshToken::create($user->id()->value);
+        [$newRefreshToken, $plainRefreshToken] = RefreshToken::issue($user->id()->value);
         $this->refreshTokenRepository->save($newRefreshToken);
 
-        return LoginResponse::create($jwt, $newRefreshToken->token(), $user);
+        return LoginResponse::create($jwt, $plainRefreshToken, $user);
     }
 }

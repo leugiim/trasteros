@@ -21,9 +21,16 @@ final readonly class DoctrineRefreshTokenRepository implements RefreshTokenRepos
         $this->entityManager->flush();
     }
 
-    public function findByToken(string $token): ?RefreshToken
+    public function findByToken(string $plainToken): ?RefreshToken
     {
-        return $this->entityManager->getRepository(RefreshToken::class)->findOneBy(['token' => $token]);
+        return $this->entityManager->getRepository(RefreshToken::class)
+            ->findOneBy(['token' => RefreshToken::hash($plainToken)]);
+    }
+
+    public function remove(RefreshToken $refreshToken): void
+    {
+        $this->entityManager->remove($refreshToken);
+        $this->entityManager->flush();
     }
 
     public function deleteByUserId(string $userId): void

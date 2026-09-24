@@ -12,6 +12,8 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 final class ApiExceptionSubscriber implements EventSubscriberInterface
@@ -44,6 +46,12 @@ final class ApiExceptionSubscriber implements EventSubscriberInterface
         }
 
         $throwable = $event->getThrowable();
+
+        // Leave security exceptions to the firewall, which turns them into
+        // 401s through the JWT entry point (see JwtErrorSubscriber)
+        if ($throwable instanceof AuthenticationException || $throwable instanceof AccessDeniedException) {
+            return;
+        }
 
         // Handle MapRequestPayload validation errors (422)
         if ($throwable instanceof UnprocessableEntityHttpException) {

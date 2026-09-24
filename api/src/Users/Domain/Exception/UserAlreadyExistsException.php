@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Users\Domain\Exception;
 
-final class UserAlreadyExistsException extends \DomainException
+use App\Shared\Domain\Exception\ConflictError;
+
+final class UserAlreadyExistsException extends ConflictError
 {
     private function __construct(string $message)
     {
@@ -14,5 +16,10 @@ final class UserAlreadyExistsException extends \DomainException
     public static function withEmail(string $email): self
     {
         return new self(sprintf('User with email "%s" already exists', $email));
+    }
+
+    public function errorCode(): string
+    {
+        return 'USER_ALREADY_EXISTS';
     }
 }

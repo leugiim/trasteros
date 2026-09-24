@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Cliente\Domain\Exception;
 
-final class InvalidEmailException extends \InvalidArgumentException
+use App\Shared\Domain\Exception\ValidationError;
+
+final class InvalidEmailException extends ValidationError
 {
     public static function empty(): self
     {
@@ -19,5 +21,10 @@ final class InvalidEmailException extends \InvalidArgumentException
     public static function tooLong(string $email): self
     {
         return new self(sprintf('El email "%s" supera los 255 caracteres', $email));
+    }
+
+    public function field(): string
+    {
+        return 'email';
     }
 }

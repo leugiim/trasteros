@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Cliente\Domain\Exception;
 
-final class ClienteNotFoundException extends \DomainException
+use App\Shared\Domain\Exception\NotFoundError;
+
+final class ClienteNotFoundException extends NotFoundError
 {
     public static function withId(int $id): self
     {
@@ -19,5 +21,10 @@ final class ClienteNotFoundException extends \DomainException
     public static function withEmail(string $email): self
     {
         return new self(sprintf('Cliente con email %s no encontrado', $email));
+    }
+
+    public function errorCode(): string
+    {
+        return 'CLIENTE_NOT_FOUND';
     }
 }

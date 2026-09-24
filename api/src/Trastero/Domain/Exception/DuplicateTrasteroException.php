@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Trastero\Domain\Exception;
 
-final class DuplicateTrasteroException extends \DomainException
+use App\Shared\Domain\Exception\ConflictError;
+
+final class DuplicateTrasteroException extends ConflictError
 {
     public static function withNumeroAndLocal(string $numero, int $localId): self
     {
@@ -13,5 +15,10 @@ final class DuplicateTrasteroException extends \DomainException
             $numero,
             $localId
         ));
+    }
+
+    public function errorCode(): string
+    {
+        return 'TRASTERO_ALREADY_EXISTS';
     }
 }

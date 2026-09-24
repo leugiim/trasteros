@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\EventSubscriber;
 
+use App\Shared\Domain\Exception\AuthenticationError;
+use App\Shared\Domain\Exception\ConflictError;
+use App\Shared\Domain\Exception\DomainError;
+use App\Shared\Domain\Exception\ForbiddenError;
+use App\Shared\Domain\Exception\NotFoundError;
+use App\Shared\Domain\Exception\ValidationError;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -12,6 +18,13 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
 
+/**
+ * Turns domain errors (Shared\Domain\Exception\DomainError) into JSON
+ * responses, whether they were thrown directly or wrapped by Messenger's
+ * HandlerFailedException. The HTTP status comes from the error's type and
+ * the code from the error itself, so a new exception only has to extend the
+ * right base class.
+ */
 final class MessengerExceptionSubscriber implements EventSubscriberInterface
 {
     public function __construct(
@@ -22,136 +35,66 @@ final class MessengerExceptionSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            // Use high priority to catch exceptions before API Platform
+            // Before API Platform and ApiExceptionSubscriber (50, the fallback)
             KernelEvents::EXCEPTION => ['onKernelException', 100],
         ];
     }
 
     public function onKernelException(ExceptionEvent $event): void
     {
-        $throwable = $event->getThrowable();
+        $error = $this->unwrap($event->getThrowable());
 
-        // Only handle HandlerFailedException from Messenger
-        if (!$throwable instanceof HandlerFailedException) {
+        if (!$error instanceof DomainError) {
             return;
         }
 
-        // Extract the original exception from HandlerFailedException
-        $originalException = $this->extractOriginalException($throwable);
+        $this->logger->error('Domain exception: {class} - {message}', [
+            'class' => $error::class,
+            'message' => $error->getMessage(),
+            'exception' => $error,
+        ]);
 
-        if ($originalException === null) {
-            return;
-        }
-
-        // Map domain exceptions to HTTP responses
-        $response = $this->createResponseFromException($originalException);
-
-        if ($response !== null) {
-            $this->logger->error('Domain exception: {class} - {message}', [
-                'class' => get_class($originalException),
-                'message' => $originalException->getMessage(),
-                'exception' => $originalException,
-            ]);
-            $event->setResponse($response);
-        }
+        $event->setResponse($this->createResponse($error));
     }
 
-    private function extractOriginalException(\Throwable $exception): ?\Throwable
+    private function unwrap(\Throwable $throwable): \Throwable
     {
-        if (!$exception instanceof HandlerFailedException) {
-            return null;
+        if ($throwable instanceof HandlerFailedException) {
+            foreach ($throwable->getWrappedExceptions() as $wrapped) {
+                return $wrapped;
+            }
         }
 
-        $exceptions = $exception->getWrappedExceptions();
-
-        // getWrappedExceptions() returns an array, not an iterator
-        foreach ($exceptions as $wrappedException) {
-            return $wrappedException;
-        }
-
-        return null;
+        return $throwable;
     }
 
-    private function createResponseFromException(\Throwable $exception): ?JsonResponse
+    private function createResponse(DomainError $error): JsonResponse
     {
-        $exceptionClass = get_class($exception);
-
-        // NotFound exceptions - 404
-        if (str_contains($exceptionClass, 'NotFoundException')) {
-            return new JsonResponse([
-                'error' => [
-                    'message' => $exception->getMessage(),
-                    'code' => $this->getErrorCode($exceptionClass),
-                ],
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        // Duplicated or AlreadyExists exceptions - 409
-        if (str_contains($exceptionClass, 'DuplicatedException')
-            || str_contains($exceptionClass, 'Duplicated')
-            || str_contains($exceptionClass, 'AlreadyExistsException')) {
-            return new JsonResponse([
-                'error' => [
-                    'message' => $exception->getMessage(),
-                    'code' => $this->getAlreadyExistsErrorCode($exceptionClass),
-                ],
-            ], Response::HTTP_CONFLICT);
-        }
-
-        // Invalid exceptions - 400
-        if (str_contains($exceptionClass, 'InvalidException') || str_contains($exceptionClass, 'Invalid')) {
+        if ($error instanceof ValidationError) {
             return new JsonResponse([
                 'error' => [
                     'message' => 'Validation failed',
-                    'code' => 'VALIDATION_ERROR',
+                    'code' => $error->errorCode(),
                     'details' => [
-                        $this->getFieldFromException($exceptionClass) => [$exception->getMessage()],
+                        $error->field() => [$error->getMessage()],
                     ],
                 ],
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        // Default: don't handle it here, let Symfony handle it
-        return null;
-    }
+        $status = match (true) {
+            $error instanceof NotFoundError => Response::HTTP_NOT_FOUND,
+            $error instanceof ConflictError => Response::HTTP_CONFLICT,
+            $error instanceof AuthenticationError => Response::HTTP_UNAUTHORIZED,
+            $error instanceof ForbiddenError => Response::HTTP_FORBIDDEN,
+            default => Response::HTTP_BAD_REQUEST,
+        };
 
-    private function getErrorCode(string $exceptionClass): string
-    {
-        // Extract entity name from exception class
-        // e.g., App\Cliente\Domain\Exception\ClienteNotFoundException -> CLIENTE_NOT_FOUND
-        if (preg_match('/([A-Z][a-z]+)NotFoundException$/', $exceptionClass, $matches)) {
-            return strtoupper($matches[1]) . '_NOT_FOUND';
-        }
-
-        return 'NOT_FOUND';
-    }
-
-    private function getAlreadyExistsErrorCode(string $exceptionClass): string
-    {
-        // Extract entity name from exception class
-        // e.g., App\Users\Domain\Exception\UserAlreadyExistsException -> USER_ALREADY_EXISTS
-        if (preg_match('/([A-Z][a-z]+)AlreadyExistsException$/', $exceptionClass, $matches)) {
-            return strtoupper($matches[1]) . '_ALREADY_EXISTS';
-        }
-
-        if (preg_match('/(Duplicated|Invalid)([A-Z][a-z]+)Exception$/', $exceptionClass, $matches)) {
-            return 'VALIDATION_ERROR';
-        }
-
-        return 'ALREADY_EXISTS';
-    }
-
-    private function getFieldFromException(string $exceptionClass): string
-    {
-        // Extract field name from exception class
-        // e.g., InvalidDniNieException -> dniNie
-        // e.g., DuplicatedEmailException -> email
-        preg_match('/(Invalid|Duplicated)([A-Z][a-zA-Z]+)Exception$/', $exceptionClass, $matches);
-
-        if (count($matches) === 3) {
-            return lcfirst($matches[2]);
-        }
-
-        return 'field';
+        return new JsonResponse([
+            'error' => [
+                'message' => $error->getMessage(),
+                'code' => $error->errorCode(),
+            ],
+        ], $status);
     }
 }

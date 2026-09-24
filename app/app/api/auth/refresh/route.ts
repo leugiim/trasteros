@@ -1,7 +1,8 @@
 import { getIronSession } from "iron-session"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
-import { API_URL, sessionOptions, type SessionData } from "@/lib/auth/session"
+import { refreshTokens } from "@/lib/auth/refresh"
+import { sessionOptions, type SessionData } from "@/lib/auth/session"
 
 export async function POST() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -14,13 +15,9 @@ export async function POST() {
     )
   }
 
-  const res = await fetch(`${API_URL}/api/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken: session.refreshToken }),
-  })
+  const data = await refreshTokens(session.refreshToken)
 
-  if (!res.ok) {
+  if (!data) {
     session.destroy()
     await session.save()
     return NextResponse.json(
@@ -29,7 +26,6 @@ export async function POST() {
     )
   }
 
-  const data = await res.json()
   session.token = data.token
   session.refreshToken = data.refreshToken
   session.user = data.user

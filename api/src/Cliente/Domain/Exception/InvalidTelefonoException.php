@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Cliente\Domain\Exception;
 
-final class InvalidTelefonoException extends \InvalidArgumentException
+use App\Shared\Domain\Exception\ValidationError;
+
+final class InvalidTelefonoException extends ValidationError
 {
     public static function empty(): self
     {
@@ -19,5 +21,10 @@ final class InvalidTelefonoException extends \InvalidArgumentException
     public static function tooLong(string $telefono): self
     {
         return new self(sprintf('El teléfono "%s" supera los 20 caracteres', $telefono));
+    }
+
+    public function field(): string
+    {
+        return 'telefono';
     }
 }

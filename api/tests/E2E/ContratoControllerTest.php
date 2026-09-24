@@ -94,6 +94,27 @@ class ContratoControllerTest extends ApiTestCase
         $this->assertResponseStatusCode(401, $response);
     }
 
+    public function testCreateContratoForAnAlreadyRentedTrasteroReturnsConflict(): void
+    {
+        $payload = [
+            'trasteroId' => $this->trasteroId,
+            'clienteId' => $this->clienteId,
+            'fechaInicio' => (new \DateTimeImmutable('-1 month'))->format('Y-m-d'),
+            'fechaFin' => (new \DateTimeImmutable('+1 year'))->format('Y-m-d'),
+            'precioMensual' => 100.0,
+            'fianza' => 200.0,
+            'fianzaPagada' => true,
+        ];
+        $this->assertResponseStatusCode(201, $this->post('/api/contratos', $payload));
+
+        $response = $this->post('/api/contratos', $payload);
+
+        // Used to be an unhandled 500 (the exception name didn't match the
+        // old name-based error mapping)
+        $this->assertResponseStatusCode(409, $response);
+        $this->assertHasError($response, 'TRASTERO_ALREADY_RENTED');
+    }
+
     public function testCreateContrato(): void
     {
         // Relative to today, not a fixed past date: Contrato::estadoCalculado()
