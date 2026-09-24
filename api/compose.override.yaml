@@ -3,5 +3,6 @@ services:
 ###> doctrine/doctrine-bundle ###
   database:
     ports:
-      - "3307:3306"
+      # Bound to loopback only: Docker-published ports bypass ufw
+      - "127.0.0.1:3307:3306"
 ###< doctrine/doctrine-bundle ###
